@@ -5,6 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef MINGL_ASSERT
+    #include <cassert>
+    #define MINGL_ASSERT assert
+#endif
+
 #ifdef unix
     #define MINGL_PLATFORM_UNIX
 #endif
@@ -13,11 +18,11 @@
     #include <X11/Xlib.h>
     #include <X11/Xutil.h>
     #include <X11/keysymdef.h>
+    #include <xmmintrin.h>
 #endif
 
 namespace mingl
 {
-
 #ifdef MINGL_PLATFORM_UNIX
 
     class Display
@@ -259,4 +264,217 @@ void DisplaySwapBuffers(Display* display)
     display->SwapBuffers();
 }
 
+// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
+enum MatMode
+{
+    MODELVIEW = 0,
+    PROJECTION = 1,
+    TEXTURE = 2,
+    NUM_MATMODES
+};
+
+enum { MAX_MATRIX_STACK_DEPTH = 32 };
+
+struct Mat44
+{
+    __m128 l1, l2, l3, l4;
+};
+
+typedef __m128 Vec4;
+
+struct RGBA
+{
+    float r, g, b, a;
+};
+
+struct Context
+{
+    Context()
+        : Execing(true)
+        , Printing(true)
+    {
+        for (int i = 0; i < NUM_MATMODES; ++i)
+            CurMatrix[i] = &MatrixStack[i][0];
+    }
+
+    bool Execing;
+    bool Printing;
+
+    MatMode MatrixMode;
+    Mat44 MatrixStack[NUM_MATMODES][MAX_MATRIX_STACK_DEPTH];
+    Mat44* CurMatrix[NUM_MATMODES];
+
+    RGBA ClearColor;
+
+    GLenum Error;
+};
+static Context ctx;
+
+union Op
+{
+    int op;
+    float f;
+    int i;
+    unsigned int u;
+    void* p;
+};
+
+enum
+{
+    VERTEX_ARRAY   = 0x001,
+    COLOR_ARRAY    = 0x002,
+    NORMAL_ARRAY   = 0x004,
+    TEXCOORD_ARRAY = 0x004,
+};
+
+static void AddOp(Op* p)
+{
+    (void)p;
+    //int op = p[0].op;
+    if (ctx.Execing)
+    {
+        //OpHandlers[op](p);
+    }
+    if (ctx.Printing)
+    {
+        //PrintOp(stderr, p);
+    }
 }
+
+void glActiveTexture(GLenum texture) { MINGL_ASSERT(0); }
+void glAlphaFunc(GLenum func, GLclampf ref) { MINGL_ASSERT(0); }
+void glBindTexture(GLenum target, GLuint texture) { MINGL_ASSERT(0); }
+void glBlendFunc(GLenum sfactor, GLenum dfactor) { MINGL_ASSERT(0); }
+
+void glClear(GLbitfield mask)
+{
+    MINGL_ASSERT(0 && "todo;");
+}
+
+void glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
+{
+    ctx.ClearColor.r = red;
+    ctx.ClearColor.g = green;
+    ctx.ClearColor.b = blue;
+    ctx.ClearColor.a = alpha;
+}
+
+void glClearDepthf(GLclampf depth) { MINGL_ASSERT(0); }
+void glClearStencil(GLint s) { MINGL_ASSERT(0); }
+void glClientActiveTexture(GLenum texture) { MINGL_ASSERT(0); }
+void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) { MINGL_ASSERT(0); }
+void glColorMask(bool red, bool green, bool blue, bool alpha) { MINGL_ASSERT(0); }
+void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) { MINGL_ASSERT(0); }
+void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid *data) { MINGL_ASSERT(0); }
+void glCompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const GLvoid *data) { MINGL_ASSERT(0); }
+void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border) { MINGL_ASSERT(0); }
+void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height) { MINGL_ASSERT(0); }
+void glCullFace(GLenum mode) { MINGL_ASSERT(0); }
+void glDeleteTextures(GLsizei n, const GLuint *textures) { MINGL_ASSERT(0); }
+void glDepthFunc(GLenum func) { MINGL_ASSERT(0); }
+void glDepthMask(bool flag) { MINGL_ASSERT(0); }
+void glDepthRangef(GLclampf zNear, GLclampf zFar) { MINGL_ASSERT(0); }
+void glDisable(GLenum cap) { MINGL_ASSERT(0); }
+void glDisableClientState(GLenum array) { MINGL_ASSERT(0); }
+void glDrawArrays(GLenum mode, GLint first, GLsizei count) { MINGL_ASSERT(0); }
+void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices) { MINGL_ASSERT(0); }
+void glEnable(GLenum cap) { MINGL_ASSERT(0); }
+
+void glEnableClientState(GLenum array)
+{
+    Op p[2];
+    //p[0].op = OP_EnableClientState;
+
+    switch(array)
+    {
+        case GL_VERTEX_ARRAY: p[1].i = VERTEX_ARRAY; break;
+        case GL_NORMAL_ARRAY: p[1].i = NORMAL_ARRAY; break;
+        case GL_COLOR_ARRAY: p[1].i = COLOR_ARRAY; break;
+        case GL_TEXTURE_COORD_ARRAY: p[1].i = TEXCOORD_ARRAY; break;
+        default: ctx.Error = GL_INVALID_ENUM; return;
+    }
+    AddOp(p);
+}
+
+void glFinish(void) { MINGL_ASSERT(0); }
+void glFlush(void) { MINGL_ASSERT(0); }
+void glFogf(GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+void glFogfv(GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+void glFrontFace(GLenum mode) { MINGL_ASSERT(0); }
+void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar) { MINGL_ASSERT(0); }
+void glGenTextures(GLsizei n, GLuint *textures) { MINGL_ASSERT(0); }
+
+GLenum glGetError()
+{
+    GLenum ret = ctx.Error;
+    ctx.Error = 0;
+    return ret;
+}
+
+void glGetIntegerv(GLenum pname, GLint *params) { MINGL_ASSERT(0); }
+
+const GLubyte* glGetString(GLenum name)
+{
+    switch (name)
+    {
+        case GL_VENDOR: return reinterpret_cast<const GLubyte*>("Scott Graham");
+        case GL_RENDERER: return reinterpret_cast<const GLubyte*>("mingl");
+        case GL_VERSION: return reinterpret_cast<const GLubyte*>("OpenGL ES-Cm 1.0");
+        case GL_EXTENSIONS: return reinterpret_cast<const GLubyte*>("");
+        default: ctx.Error = GL_INVALID_ENUM; return 0;
+    }
+}
+
+void glHint(GLenum target, GLenum mode) { MINGL_ASSERT(0); }
+void glLightModelf(GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+void glLightModelfv(GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+void glLightf(GLenum light, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+void glLightfv(GLenum light, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+void glLineWidth(GLfloat width) { MINGL_ASSERT(0); }
+
+void glLoadIdentity(void)
+{
+    Mat44& m = *ctx.CurMatrix[ctx.MatrixMode];
+    m.l1 = _mm_setr_ps(1.f, 0.f, 0.f, 0.f);
+    m.l2 = _mm_setr_ps(0.f, 1.f, 0.f, 0.f);
+    m.l3 = _mm_setr_ps(0.f, 0.f, 1.f, 0.f);
+    m.l4 = _mm_setr_ps(0.f, 0.f, 0.f, 1.f);
+}
+
+void glLoadMatrixf(const GLfloat *m) { MINGL_ASSERT(0); }
+void glLogicOp(GLenum opcode) { MINGL_ASSERT(0); }
+void glMaterialf(GLenum face, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+void glMatrixMode(GLenum mode) { MINGL_ASSERT(0); }
+void glMultMatrixf(const GLfloat *m) { MINGL_ASSERT(0); }
+void glMultiTexCoord4f(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q) { MINGL_ASSERT(0); }
+void glNormal3f(GLfloat nx, GLfloat ny, GLfloat nz) { MINGL_ASSERT(0); }
+void glNormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer) { MINGL_ASSERT(0); }
+void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar) { MINGL_ASSERT(0); }
+void glPixelStorei(GLenum pname, GLint param) { MINGL_ASSERT(0); }
+void glPointSize(GLfloat size) { MINGL_ASSERT(0); }
+void glPolygonOffset(GLfloat factor, GLfloat units) { MINGL_ASSERT(0); }
+void glPopMatrix(void) { MINGL_ASSERT(0); }
+void glPushMatrix(void) { MINGL_ASSERT(0); }
+void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels) { MINGL_ASSERT(0); }
+void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
+void glScalef(GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
+void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) { MINGL_ASSERT(0); }
+void glShadeModel(GLenum mode) { MINGL_ASSERT(0); }
+void glStencilFunc(GLenum func, GLint ref, GLuint mask) { MINGL_ASSERT(0); }
+void glStencilMask(GLuint mask) { MINGL_ASSERT(0); }
+void glStencilOp(GLenum fail, GLenum zfail, GLenum zpass) { MINGL_ASSERT(0); }
+void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) { MINGL_ASSERT(0); }
+void glTexEnvf(GLenum target, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+void glTexEnvfv(GLenum target, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) { MINGL_ASSERT(0); }
+void glTexParameterf(GLenum target, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) { MINGL_ASSERT(0); }
+void glTranslatef(GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
+void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) { MINGL_ASSERT(0); }
+void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) { MINGL_ASSERT(0); }
+
+}
+

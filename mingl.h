@@ -527,7 +527,6 @@ void glPopMatrix(void);
 void glPushMatrix(void);
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
-void glSampleCoverage(GLclampf value, bool invert);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);
 void glShadeModel(GLenum mode);

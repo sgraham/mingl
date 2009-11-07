@@ -20,6 +20,77 @@
 
 namespace mingl
 {
+typedef unsigned int GLenum;
+typedef unsigned int GLbitfield;
+typedef int GLint;
+typedef int GLsizei;
+typedef unsigned char GLubyte;
+typedef unsigned int GLuint;
+typedef float GLfloat;
+typedef float GLclampf;
+typedef void GLvoid;
+
+// endianness
+#if defined(__LITTLE_ENDIAN__)
+	#define MINGL_LITTLE_ENDIAN
+#endif
+
+#if defined(__BIG_ENDIAN__)
+	#define MINGL_BIG_ENDIAN
+#endif
+
+// todo; some magical platform detection here
+
+#if defined(MINGL_LITTLE_ENDIAN) && defined(MINGL_BIG_ENDIAN)
+	#error cannot define both big and little endian!
+#endif
+
+#if !defined(MINGL_LITTLE_ENDIAN) && !defined(MINGL_BIG_ENDIAN)
+	#error endianness not defined
+#endif
+
+// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
+// The framebuffer API follows
+// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
+class Pixel
+{
+    public:
+        Pixel()
+            : r(0.f)
+            , g(0.f)
+            , b(0.f)
+            , a(0.f)
+        {}
+        Pixel(float r, float g, float b, float a = 0.f)
+        {
+            this->r = r;
+            this->g = g;
+            this->b = b;
+            this->a = a;
+        }
+        float r;
+        float g;
+        float b;
+        float a;
+};
+
+class Display
+{
+    public:
+        Display();
+        Display(const char* title, int width, int height);
+        ~Display();
+
+        bool Open(const char* title, int width, int height);
+        void Close();
+        bool IsOpen() const;
+        bool Update(const Pixel* pixels);
+};
+
 // -----------------------------------------------------------------------
 // -----------------------------------------------------------------------
 // -----------------------------------------------------------------------
@@ -27,20 +98,6 @@ namespace mingl
 // -----------------------------------------------------------------------
 // -----------------------------------------------------------------------
 // -----------------------------------------------------------------------
-
-typedef unsigned int GLenum;
-typedef unsigned char GLboolean;
-typedef unsigned int GLbitfield;
-typedef signed char GLbyte;
-typedef short GLshort;
-typedef int GLint;
-typedef int GLsizei;
-typedef unsigned char GLubyte;
-typedef unsigned short GLushort;
-typedef unsigned int GLuint;
-typedef float GLfloat;
-typedef float GLclampf;
-typedef void GLvoid;
 
 /*************************************************************/
 
@@ -476,7 +533,7 @@ void glClearDepthf(GLclampf depth);
 void glClearStencil(GLint s);
 void glClientActiveTexture(GLenum texture);
 void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
-void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
+void glColorMask(bool red, bool green, bool blue, bool alpha);
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid *data);
 void glCompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const GLvoid *data);
@@ -485,7 +542,7 @@ void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffse
 void glCullFace(GLenum mode);
 void glDeleteTextures(GLsizei n, const GLuint *textures);
 void glDepthFunc(GLenum func);
-void glDepthMask(GLboolean flag);
+void glDepthMask(bool flag);
 void glDepthRangef(GLclampf zNear, GLclampf zFar);
 void glDisable(GLenum cap);
 void glDisableClientState(GLenum array);
@@ -528,7 +585,7 @@ void glPushMatrix(void);
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
 void glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z);
-void glSampleCoverage(GLclampf value, GLboolean invert);
+void glSampleCoverage(GLclampf value, bool invert);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);
 void glShadeModel(GLenum mode);

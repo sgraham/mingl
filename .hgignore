@@ -1,3 +1,5 @@
 syntax: glob
 scratch/*
 *.swp
+testtex.cpp
+test

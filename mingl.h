@@ -1,18 +1,16 @@
 // -----------------------------------------------------------------------
-// FOR LICENSE INFORMATION, PLEASE SEE THE BOTTOM OF THIS FILE.
-// -----------------------------------------------------------------------
 
 // mingl is a minimal graphics/demo library. Its goals are definitely not to
 // be fast, take advantage of fancy hardware features, or to show off neat
 // effects. Instead, its only goals are to be servicable to draw simple
 // dianostic scenes on many different platforms, while being distributed as
-// only one header and one c++ file, and not requiring any configuration or
-// having any external dependencies.
+// merely one C++ header file, and not requiring any configuration or having
+// any external dependencies other than the standard platform libraries.
 //
-// The API of mingls graphics is modelled after OpenGL ES 1.x. It is by no
+// The API of mingls graphics is modelled after OpenGL ES 1.0. It is by no
 // means complete, but a programmer familiar with OpenGL shouldn't have any
 // trouble getting something on the screen. mingl does expect to have a
-// floating point unit though, and drop all the fixed-related API functions
+// floating point unit though, and drops all the fixed-related API functions
 // from the ES spec.
 //
 // In addition, there is a simple interface for demo-type behaviour of setting
@@ -20,6 +18,21 @@
 
 namespace mingl
 {
+
+class Display;
+Display* DisplayOpen(const char* title = "mingl app", int width = 1280, int height = 720);
+bool DisplayIsOpen(Display* display);
+void DisplayClose(Display* display);
+void DisplaySwapBuffers(Display* display);
+
+// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
+// The rendering API follows
+// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
+
 typedef unsigned int GLenum;
 typedef unsigned int GLbitfield;
 typedef int GLint;
@@ -30,80 +43,10 @@ typedef float GLfloat;
 typedef float GLclampf;
 typedef void GLvoid;
 
-// endianness
-#if defined(__LITTLE_ENDIAN__)
-	#define MINGL_LITTLE_ENDIAN
-#endif
-
-#if defined(__BIG_ENDIAN__)
-	#define MINGL_BIG_ENDIAN
-#endif
-
-// todo; some magical platform detection here
-
-#if defined(MINGL_LITTLE_ENDIAN) && defined(MINGL_BIG_ENDIAN)
-	#error cannot define both big and little endian!
-#endif
-
-#if !defined(MINGL_LITTLE_ENDIAN) && !defined(MINGL_BIG_ENDIAN)
-	#error endianness not defined
-#endif
-
-// -----------------------------------------------------------------------
-// -----------------------------------------------------------------------
-// -----------------------------------------------------------------------
-// The framebuffer API follows
-// -----------------------------------------------------------------------
-// -----------------------------------------------------------------------
-// -----------------------------------------------------------------------
-class Pixel
-{
-    public:
-        Pixel()
-            : r(0.f)
-            , g(0.f)
-            , b(0.f)
-            , a(0.f)
-        {}
-        Pixel(float r, float g, float b, float a = 0.f)
-        {
-            this->r = r;
-            this->g = g;
-            this->b = b;
-            this->a = a;
-        }
-        float r;
-        float g;
-        float b;
-        float a;
-};
-
-class Display
-{
-    public:
-        Display();
-        Display(const char* title, int width, int height);
-        ~Display();
-
-        bool Open(const char* title, int width, int height);
-        void Close();
-        bool IsOpen() const;
-        bool Update(const Pixel* pixels);
-};
-
-// -----------------------------------------------------------------------
-// -----------------------------------------------------------------------
-// -----------------------------------------------------------------------
-// The rendering API follows
-// -----------------------------------------------------------------------
-// -----------------------------------------------------------------------
-// -----------------------------------------------------------------------
-
 /*************************************************************/
 
 enum ClearBufferMask {
     GL_DEPTH_BUFFER_BIT =             0x00000100,
-    GL_STENCIL_BUFFER_BIT =           0x00000400,
     GL_COLOR_BUFFER_BIT =             0x00004000,
 };
 
@@ -584,7 +527,6 @@ void glPopMatrix(void);
 void glPushMatrix(void);
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
-void glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z);
 void glSampleCoverage(GLclampf value, bool invert);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);

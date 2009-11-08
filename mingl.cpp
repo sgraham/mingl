@@ -1,9 +1,13 @@
 // See mingl.h for copyright and documentation.
 
 #include "mingl.h"
+
+// todo; remove all these
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+#include <map>
 
 #ifndef MINGL_ASSERT
     #include <cassert>
@@ -55,7 +59,25 @@ struct Mat44
     #define MINGL_ERR_WRET(e,r) do { ctx.Error = e; return r; } while(0)
 #endif
 
-typedef __m128 Vec4;
+union Vec4
+{
+    __m128 v;
+    struct
+    {
+        float x, y, z, w;
+    };
+};
+
+struct Texture
+{
+    GLuint* C;
+    int Width;
+    int Height;
+    ~Texture()
+    {
+        delete[] C;
+    }
+};
 
 struct Context
 {
@@ -74,17 +96,19 @@ struct Context
     Mat44 MatrixStack[NUM_MATRIX_MODES][MAX_MATRIX_STACK_DEPTH];
     Mat44* CurMatrix[NUM_MATRIX_MODES];
 
-    Vec4 ClearColor;
+    float ClearDepth;
+    GLuint ClearColor;
 
     GLenum Error;
 
     // buffer, filled out by Display
     struct Buffer
     {
-        GLuint* Z;
+        float* Z;
         GLuint* C;
         int Width;
         int Height;
+        int Stride;
     };
     Buffer Buf;
 
@@ -107,26 +131,249 @@ struct Context
     ArrayState VertexArray;
     ArrayState ColorArray;
     ArrayState TexCoordArray;
+
+    bool Texture2DEnabled;
+    Texture* CurrentTexture;
+    std::map<GLuint, Texture*> AllTextures;
 };
 static Context ctx;
 
+template <class T> void swap(T& a, T& b)
+{
+    T c = a;
+    a = b;
+    b = c;
+}
+
+struct TriVert
+{
+    Vec4 pos;
+    Vec4 tex;
+    Vec4 clr;
+};
+
+class Gradients
+{
+    public:
+        Gradients(const TriVert& v1, const TriVert& v2, const TriVert& v3)
+        {
+            const float dx23 = v2.pos.x - v3.pos.x;
+            const float dy13 = v1.pos.y - v3.pos.y;
+            const float dx13 = v1.pos.x - v3.pos.x;
+            const float dy23 = v2.pos.y - v3.pos.y;
+            const float oodX = 1.f / ((dx23 * dy13) - (dx13 * dy23));
+
+            float oodY = -oodX;
+
+            OOZ1 = 1.f / v1.pos.z;
+            OOZ2 = 1.f / v2.pos.z;
+            OOZ3 = 1.f / v3.pos.z;
+            UOZ1 = v1.tex.x * OOZ1;
+            UOZ2 = v2.tex.x * OOZ2;
+            UOZ3 = v3.tex.x * OOZ3;
+            VOZ1 = v1.tex.y * OOZ1;
+            VOZ2 = v2.tex.y * OOZ2;
+            VOZ3 = v3.tex.y * OOZ3;
+
+            const float dooz13 = OOZ1 - OOZ3;
+            const float dooz23 = OOZ2 - OOZ3;
+            const float duoz13 = UOZ1 - UOZ3;
+            const float duoz23 = UOZ2 - UOZ3;
+            const float dvoz13 = VOZ1 - VOZ3;
+            const float dvoz23 = VOZ2 - VOZ3;
+
+            dOOZdX = oodX * ((dooz23 * dy13) - (dooz13 * dy23));
+            dOOZdY = oodY * ((dooz23 * dx13) - (dooz13 * dx23));
+
+            dUOZdX = oodX * ((duoz23 * dy13) - (duoz13 * dy23));
+            dUOZdY = oodY * ((duoz23 * dx13) - (duoz13 * dx23));
+
+            dVOZdX = oodX * ((dvoz23 * dy13) - (dvoz13 * dy23));
+            dVOZdY = oodY * ((dvoz23 * dx13) - (dvoz13 * dx23));
+        }
+
+        float OOZ1, OOZ2, OOZ3;
+        float UOZ1, UOZ2, UOZ3;
+        float VOZ1, VOZ2, VOZ3;
+        float dOOZdX, dOOZdY;
+        float dUOZdX, dUOZdY;
+        float dVOZdX, dVOZdY;
+};
+class Edge
+{
+    public:
+        Edge(const Gradients& grads, const TriVert& v1, const TriVert& v2, float topOOZ, float topUOZ, float topVOZ)
+        {
+            Y = ceil(v1.pos.y);
+            int yend = ceil(v2.pos.y);
+            Height = yend - Y;
+
+            const float yprestep = Y - v1.pos.y;
+            const float realWidth = v2.pos.x - v1.pos.x;
+            const float realHeight = v2.pos.y - v1.pos.y;
+
+            X = (realWidth * yprestep) / realHeight + v1.pos.x;
+            XStep = realWidth / realHeight;
+
+            float xprestep = X - v1.pos.x;
+
+            OOZ = topOOZ +
+                yprestep * grads.dOOZdY +
+                xprestep * grads.dOOZdX;
+            OOZStep = XStep * grads.dOOZdX +
+                grads.dOOZdY;
+
+            UOZ = topUOZ +
+                yprestep * grads.dUOZdY +
+                xprestep * grads.dUOZdX;
+            UOZStep = XStep * grads.dUOZdX + grads.dUOZdY;
+
+            VOZ = topVOZ +
+                yprestep * grads.dVOZdY +
+                xprestep * grads.dVOZdX;
+            VOZStep = XStep * grads.dVOZdX + grads.dVOZdY;
+        }
+
+        void Step()
+        {
+            X += XStep;
+            Y += 1;
+            Height -= 1;
+            OOZ += OOZStep;
+        }
+
+        float X, XStep;
+        int Y, Height;
+        float OOZ, OOZStep;
+        float UOZ, UOZStep;
+        float VOZ, VOZStep;
+};
+
+static void drawScanLine(Context::Buffer& buf, const Gradients& grads, const Edge* left, const Edge* right, GLuint color)
+{
+    int xstart = ceil(left->X);
+    int xprestep = xstart - left->X;
+
+    GLuint* dest = buf.C + left->Y * buf.Stride + xstart;
+    int width = ceil(right->X) - xstart;
+
+    float ooz = left->OOZ + xprestep * grads.dOOZdX;
+
+    while (width-- > 0)
+    {
+        //float Z = 1 / ooz;
+        *dest++ = color;
+
+        ooz += grads.dOOZdX;
+    }
+}
+
+static void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* V3)
+{
+    // v1 top, v2 middle, v3 bottom
+    if (V1->pos.y > V3->pos.y) swap(V1, V3);
+    if (V2->pos.y > V3->pos.y) swap(V2, V3);
+    if (V1->pos.y > V2->pos.y) swap(V1, V2);
+
+    const TriVert& v1 = *V1;
+    const TriVert& v2 = *V2;
+    const TriVert& v3 = *V3;
+    /*
+    printf("input: (%f,%f) (%f,%f) (%f,%f)\n",
+            v1.pos.x, v1.pos.y,
+            v2.pos.x, v2.pos.y,
+            v3.pos.x, v3.pos.y);
+    */
+
+    Gradients grads(v1, v2, v3);
+    Edge edge12(grads, v1, v2, grads.OOZ1, grads.UOZ1, grads.VOZ1);
+    Edge edge13(grads, v1, v3, grads.OOZ1, grads.UOZ1, grads.VOZ1);
+    Edge edge23(grads, v2, v3, grads.OOZ2, grads.UOZ2, grads.VOZ2);
+
+    // figure out where v2.x is on long edge
+    const float xOnLong = (((v2.pos.y - v1.pos.y) * (v3.pos.x - v1.pos.x)) / (v3.pos.y - v1.pos.y)) + v1.pos.x;
+
+    const Edge* left1;
+    const Edge* right1;
+    const Edge* left2;
+    const Edge* right2;
+    if (v2.pos.x > xOnLong)
+    {
+        left1 = left2 = &edge13;
+        right1 = &edge12;
+        right2 = &edge23;
+    }
+    else
+    {
+        left1 = &edge12;
+        left2 = &edge23;
+        right1 = right2 = &edge13;
+    }
+    int height = edge12.Height;
+    while (height)
+    {
+        drawScanLine(ctx.Buf, grads, left1, right1, ctx.Vert.ColorInt);
+        edge12.Step(); edge13.Step();
+        height -= 1;
+    }
+
+    height = edge23.Height;
+    while (height)
+    {
+        drawScanLine(ctx.Buf, grads, left2, right2, ctx.Vert.ColorInt);
+        edge23.Step(); edge13.Step();
+        height -= 1;
+    }
+}
+
+static GLuint floatColorToUint(float r, float g, float b, float a)
+{
+    // todo; *256 + biasing and clamping
+    GLuint ri = (GLuint)(r * 255.f);
+    GLuint gi = (GLuint)(g * 255.f);
+    GLuint bi = (GLuint)(b * 255.f);
+    GLuint ai = (GLuint)(a * 255.f);
+    return (bi << 24) | (gi << 16) | (ri << 8) | ai;
+}
+static GLuint floatColorToUint(Vec4 v) { return floatColorToUint(v.x, v.y, v.z, v.w); }
+
 void glActiveTexture(GLenum texture) { MINGL_ASSERT(0); }
 void glAlphaFunc(GLenum func, GLclampf ref) { MINGL_ASSERT(0); }
-void glBindTexture(GLenum target, GLuint texture) { MINGL_ASSERT(0); }
+
+void glBindTexture(GLenum target, GLuint texture)
+{
+    if (target != GL_TEXTURE_2D) MINGL_ERR(GL_INVALID_ENUM);
+    std::map<GLuint, Texture*>::const_iterator i = ctx.AllTextures.find(texture);
+    if (i == ctx.AllTextures.end())
+    {
+        ctx.AllTextures[texture] = ctx.CurrentTexture = new Texture();
+    }
+    else
+    {
+        ctx.CurrentTexture = i->second;
+    }
+}
+
 void glBlendFunc(GLenum sfactor, GLenum dfactor) { MINGL_ASSERT(0); }
 
 void glClear(GLbitfield mask)
 {
-    int dim = sizeof(GLuint) * ctx.Buf.Width * ctx.Buf.Height;
+    int dim = ctx.Buf.Width * ctx.Buf.Height;
     if ((mask & GL_DEPTH_BUFFER_BIT) != 0)
-        memset(ctx.Buf.Z, 0, dim);
+    {
+        for (int i = 0; i < dim; ++i)
+            ctx.Buf.Z[i] = ctx.ClearDepth;
+    }
     if ((mask & GL_COLOR_BUFFER_BIT) != 0)
-        memset(ctx.Buf.C, 0, dim);
+    {
+        for (int i = 0; i < dim; ++i)
+            ctx.Buf.C[i] = ctx.ClearColor;
+    }
 }
 
 void glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
 {
-    ctx.ClearColor = _mm_setr_ps(red, green, blue, alpha);
+    ctx.ClearColor = floatColorToUint(red, green, blue, alpha);
 }
 
 void glClearDepthf(GLclampf depth) { MINGL_ASSERT(0); }
@@ -135,7 +382,8 @@ void glClientActiveTexture(GLenum texture) { MINGL_ASSERT(0); }
 
 void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
-    ctx.Vert.Color = _mm_setr_ps(red, green, blue, alpha);
+    ctx.Vert.Color.v = _mm_setr_ps(red, green, blue, alpha);
+    ctx.Vert.ColorInt = floatColorToUint(ctx.Vert.Color);
 }
 
 void glColorMask(bool red, bool green, bool blue, bool alpha) { MINGL_ASSERT(0); }
@@ -167,6 +415,16 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count)
 {
     if (mode == GL_TRIANGLES)
     {
+        const GLint step = (ctx.VertexArray.Size + ctx.VertexArray.Stride);
+        const GLint last = first + count;
+        for (GLint i = first; i < last; i += step * 3)
+        {
+            TriVert a, b, c;
+            a.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[i]);
+            b.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[i + step]);
+            c.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[i + step + step]); // todo; this is going to load past end on last one. hrm.
+            renderTriangle(&a, &b, &c);
+        }
         return;
     }
     else
@@ -176,7 +434,23 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count)
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices) { MINGL_ASSERT(0); }
-void glEnable(GLenum cap) { MINGL_ASSERT(0); }
+
+static void enableOrDisable(GLenum cap, bool val)
+{
+    switch (cap)
+    {
+        case GL_TEXTURE_2D:
+            ctx.Texture2DEnabled = val;
+            break;
+        default:
+            MINGL_ASSERT(0);
+    }
+}
+
+void glEnable(GLenum cap)
+{
+    enableOrDisable(cap, true);
+}
 
 void glEnableClientState(GLenum array)
 {
@@ -196,7 +470,12 @@ void glFogf(GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
 void glFogfv(GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
 void glFrontFace(GLenum mode) { MINGL_ASSERT(0); }
 void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar) { MINGL_ASSERT(0); }
-void glGenTextures(GLsizei n, GLuint *textures) { MINGL_ASSERT(0); }
+void glGenTextures(GLsizei n, GLuint *textures)
+{
+    static GLuint counter = 1;
+    for (GLsizei i = 0; i < n; ++i)
+        textures[i] = counter++;
+}
 
 GLenum glGetError()
 {
@@ -258,10 +537,31 @@ void glShadeModel(GLenum mode) { MINGL_ASSERT(0); }
 void glStencilFunc(GLenum func, GLint ref, GLuint mask) { MINGL_ASSERT(0); }
 void glStencilMask(GLuint mask) { MINGL_ASSERT(0); }
 void glStencilOp(GLenum fail, GLenum zfail, GLenum zpass) { MINGL_ASSERT(0); }
-void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) { MINGL_ASSERT(0); }
+
+void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
+{
+    ctx.TexCoordArray.Data = reinterpret_cast<const float*>(pointer);
+    ctx.TexCoordArray.Size = size;
+    ctx.TexCoordArray.Stride = stride;
+    if (size < 2 || size > 4) MINGL_ERR(GL_INVALID_VALUE);
+    if (type != GL_FLOAT) MINGL_ERR(GL_INVALID_ENUM);
+    if (stride < 0) MINGL_ERR(GL_INVALID_VALUE);
+}
+
 void glTexEnvf(GLenum target, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
 void glTexEnvfv(GLenum target, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
-void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) { MINGL_ASSERT(0); }
+void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels)
+{
+    if (target != GL_TEXTURE_2D) MINGL_ERR(GL_INVALID_ENUM);
+    if (format != GL_RGBA) MINGL_ERR(GL_INVALID_ENUM);
+    if (type != GL_UNSIGNED_BYTE) MINGL_ERR(GL_INVALID_ENUM);
+    if (level < 0) MINGL_ERR(GL_INVALID_VALUE);
+    if (internalformat != (GLint)format) MINGL_ERR(GL_INVALID_OPERATION);
+    if (border != 0) MINGL_ERR(GL_INVALID_VALUE);
+
+    if (level != 0) MINGL_ERR(GL_INVALID_VALUE); // todo; mipmaps
+
+}
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) { MINGL_ASSERT(0); }
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
@@ -273,7 +573,7 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
     ctx.VertexArray.Stride = stride;
     if (size < 2 || size > 4) MINGL_ERR(GL_INVALID_VALUE);
     if (type != GL_FLOAT) MINGL_ERR(GL_INVALID_ENUM);
-    if (size < 0) MINGL_ERR(GL_INVALID_VALUE);
+    if (stride < 0) MINGL_ERR(GL_INVALID_VALUE);
 }
 
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) { MINGL_ASSERT(0); }
@@ -376,9 +676,10 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) { MINGL_ASSERT(
                 ::XFlush(mDisplay);
 
                 // todo; configurable mem alloc
-                ctx.Buf.Z = new GLuint[width * height];
+                ctx.Buf.Z = new float[width * height];
                 ctx.Buf.C = new GLuint[width * height];
                 ctx.Buf.Width = width;
+                ctx.Buf.Stride = width;
                 ctx.Buf.Height = height;
 
                 mIsOpen = true;
@@ -423,23 +724,10 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) { MINGL_ASSERT(
                 if (!mDisplay || !mWindow || !mImage)
                     return;
 
-                char* testdata = (char*)malloc(1280*720*4);
-                char j = 0;
-                for (int i = 0; i < 1280*720*4; i += 4)
-                {
-                    testdata[i+1] = j;
-                    testdata[i+2] = 0;
-                    testdata[i+3] = 0;
-                    j += 1;
-                }
-
-                mImage->data = testdata;
+                mImage->data = (char*)ctx.Buf.C;
 
                 ::XPutImage(mDisplay, mWindow, mGC, mImage, 0, 0, 0, 0, mWidth, mHeight);
                 ::XFlush(mDisplay);
-
-                mImage->data = NULL;
-                free(testdata);
 
                 pumpEvents();
             }

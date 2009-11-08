@@ -240,6 +240,8 @@ class Edge
             Y += 1;
             Height -= 1;
             OOZ += OOZStep;
+            UOZ += UOZStep;
+            VOZ += VOZStep;
         }
 
         float X, XStep;
@@ -249,22 +251,33 @@ class Edge
         float VOZ, VOZStep;
 };
 
-static void drawScanLine(Context::Buffer& buf, const Gradients& grads, const Edge* left, const Edge* right, GLuint color)
+static void drawScanLine(Context::Buffer& buf, const Gradients& grads, const Edge* left, const Edge* right, const Texture* texture)
 {
     int xstart = ceil(left->X);
     int xprestep = xstart - left->X;
 
     GLuint* dest = buf.C + left->Y * buf.Stride + xstart;
+    const GLuint* texdata = texture->C;
+    const int texWidth = texture->Width;
+    const int texStride = texWidth;
+    const int texHeight = texture->Height;
     int width = ceil(right->X) - xstart;
 
     float ooz = left->OOZ + xprestep * grads.dOOZdX;
+    float uoz = left->UOZ + xprestep * grads.dUOZdX;
+    float voz = left->VOZ + xprestep * grads.dVOZdX;
 
     while (width-- > 0)
     {
-        //float Z = 1 / ooz;
-        *dest++ = color;
+        float z = 1 / ooz;
+        int u = uoz * z * texWidth;
+        int v = voz * z * texHeight;
+        //printf("u, v: %d %d\n", u, v);
+        *dest++ = *(texdata + u + (v * texStride));
 
         ooz += grads.dOOZdX;
+        uoz += grads.dUOZdX;
+        voz += grads.dVOZdX;
     }
 }
 
@@ -279,10 +292,14 @@ static void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
     const TriVert& v2 = *V2;
     const TriVert& v3 = *V3;
     /*
-    printf("input: (%f,%f) (%f,%f) (%f,%f)\n",
+    printf("input pos: (%f,%f) (%f,%f) (%f,%f)\n",
             v1.pos.x, v1.pos.y,
             v2.pos.x, v2.pos.y,
             v3.pos.x, v3.pos.y);
+    printf("input tex: (%f,%f) (%f,%f) (%f,%f)\n",
+            v1.tex.x, v1.tex.y,
+            v2.tex.x, v2.tex.y,
+            v3.tex.x, v3.tex.y);
     */
 
     Gradients grads(v1, v2, v3);
@@ -312,7 +329,7 @@ static void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
     int height = edge12.Height;
     while (height)
     {
-        drawScanLine(ctx.Buf, grads, left1, right1, ctx.Vert.ColorInt);
+        drawScanLine(ctx.Buf, grads, left1, right1, ctx.CurrentTexture);
         edge12.Step(); edge13.Step();
         height -= 1;
     }
@@ -320,7 +337,7 @@ static void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
     height = edge23.Height;
     while (height)
     {
-        drawScanLine(ctx.Buf, grads, left2, right2, ctx.Vert.ColorInt);
+        drawScanLine(ctx.Buf, grads, left2, right2, ctx.CurrentTexture);
         edge23.Step(); edge13.Step();
         height -= 1;
     }
@@ -415,14 +432,23 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count)
 {
     if (mode == GL_TRIANGLES)
     {
-        const GLint step = (ctx.VertexArray.Size + ctx.VertexArray.Stride);
-        const GLint last = first + count;
-        for (GLint i = first; i < last; i += step * 3)
+        const GLint vstep = (ctx.VertexArray.Size + ctx.VertexArray.Stride);
+        const GLint tstep = (ctx.TexCoordArray.Size + ctx.TexCoordArray.Stride);
+        const GLint vlast = first + count;
+        GLint vi = first;
+        GLint ti = first;
+        while (vi < vlast)
         {
             TriVert a, b, c;
-            a.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[i]);
-            b.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[i + step]);
-            c.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[i + step + step]); // todo; this is going to load past end on last one. hrm.
+            a.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi]); vi += vstep;
+            b.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi]); vi += vstep;
+            c.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi]); vi += vstep; // todo; this is going to load past end on last one.
+            if (ctx.Texture2DEnabled)
+            {
+                a.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti]); ti += tstep;
+                b.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti]); ti += tstep;
+                c.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti]); ti += tstep; // todo; this is going to load past end on last one.
+            }
             renderTriangle(&a, &b, &c);
         }
         return;
@@ -561,6 +587,14 @@ void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei widt
 
     if (level != 0) MINGL_ERR(GL_INVALID_VALUE); // todo; mipmaps
 
+    if (ctx.CurrentTexture->C)
+    {
+        delete[] ctx.CurrentTexture->C;
+    }
+    ctx.CurrentTexture->C = new GLuint[width * height];
+    memcpy(ctx.CurrentTexture->C, pixels, width * height * 4);
+    ctx.CurrentTexture->Width = width;
+    ctx.CurrentTexture->Height = height;
 }
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) { MINGL_ASSERT(0); }

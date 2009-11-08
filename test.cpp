@@ -35,6 +35,22 @@ int main()
         0.f, 0.f,
     };
 
+    /*
+    float triangle[] = 
+    {
+        100.f, 100.f, -3.f,
+        300.f, 300.f, -3.f,
+        100.f, 300.f, -3.f,
+    };
+
+    float texcoords[] =
+    {
+        0.f, 0.f,
+        1.f, 1.f,
+        0.f, 1.f,
+    };
+    */
+
     glEnable(GL_TEXTURE_2D);
     GLuint texid; glGenTextures(1, &texid);
     glBindTexture(GL_TEXTURE_2D, texid);

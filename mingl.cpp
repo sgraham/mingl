@@ -592,7 +592,14 @@ void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei widt
         delete[] ctx.CurrentTexture->C;
     }
     ctx.CurrentTexture->C = new GLuint[width * height];
-    memcpy(ctx.CurrentTexture->C, pixels, width * height * 4);
+    const unsigned char* input = reinterpret_cast<const unsigned char*>(pixels);
+    for (int i = 0; i < width * height; ++i)
+    {
+        int j = i * 4;
+        // ARGB to RGBA
+        // todo; not sure if this is caused by 1. endianness, 2. tex fmt, or 3. X11 buf format.
+        ctx.CurrentTexture->C[i] = (input[j] << 8) | (input[j+1] << 16) | (input[j+2] << 24) | input[j+3];
+    }
     ctx.CurrentTexture->Width = width;
     ctx.CurrentTexture->Height = height;
 }

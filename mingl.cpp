@@ -55,8 +55,10 @@ struct Mat44
 
 // can be customized to assert, etc.
 #ifndef MINGL_ERR
-    #define MINGL_ERR(e) do { ctx.Error = e; return; } while(0)
-    #define MINGL_ERR_WRET(e,r) do { ctx.Error = e; return r; } while(0)
+    //#define MINGL_ERR(e) do { ctx.Error = e; return; } while(0)
+    //#define MINGL_ERR_WRET(e,r) do { ctx.Error = e; return r; } while(0)
+    #define MINGL_ERR(e) do { MINGL_ASSERT(false && #e); return; } while(0)
+    #define MINGL_ERR_WRET(e,r) do { MINGL_ASSERT(false && #e); return r; } while(0)
 #endif
 
 union Vec4
@@ -288,11 +290,10 @@ static void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
     if (V2->pos.y > V3->pos.y) swap(V2, V3);
     if (V1->pos.y > V2->pos.y) swap(V1, V2);
 
-    const TriVert& v1 = *V1;
-    const TriVert& v2 = *V2;
-    const TriVert& v3 = *V3;
-    /*
-    printf("input pos: (%f,%f) (%f,%f) (%f,%f)\n",
+    TriVert v1 = *V1;
+    TriVert v2 = *V2;
+    TriVert v3 = *V3;
+    /*printf("input pos: (%f,%f) (%f,%f) (%f,%f)\n",
             v1.pos.x, v1.pos.y,
             v2.pos.x, v2.pos.y,
             v3.pos.x, v3.pos.y);
@@ -302,6 +303,13 @@ static void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
             v3.tex.x, v3.tex.y);
     */
 
+    v1.pos.x -= 0.5f;
+    v1.pos.y -= 0.5f;
+    v2.pos.x -= 0.5f;
+    v2.pos.y -= 0.5f;
+    v3.pos.x -= 0.5f;
+    v3.pos.y -= 0.5f;
+
     Gradients grads(v1, v2, v3);
     Edge edge12(grads, v1, v2, grads.OOZ1, grads.UOZ1, grads.VOZ1);
     Edge edge13(grads, v1, v3, grads.OOZ1, grads.UOZ1, grads.VOZ1);
@@ -309,6 +317,7 @@ static void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
 
     // figure out where v2.x is on long edge
     const float xOnLong = (((v2.pos.y - v1.pos.y) * (v3.pos.x - v1.pos.x)) / (v3.pos.y - v1.pos.y)) + v1.pos.x;
+    //printf("xOnLong: %f\n", xOnLong);
 
     const Edge* left1;
     const Edge* right1;
@@ -430,6 +439,7 @@ void glDisableClientState(GLenum array)
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count)
 {
+    TriVert a, b, c;
     if (mode == GL_TRIANGLES)
     {
         const GLint vstep = (ctx.VertexArray.Size + ctx.VertexArray.Stride);
@@ -439,7 +449,6 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count)
         GLint ti = first;
         while (vi < vlast)
         {
-            TriVert a, b, c;
             a.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi]); vi += vstep;
             b.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi]); vi += vstep;
             c.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi]); vi += vstep; // todo; this is going to load past end on last one.
@@ -449,9 +458,49 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count)
                 b.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti]); ti += tstep;
                 c.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti]); ti += tstep; // todo; this is going to load past end on last one.
             }
+            // todo; this is silly
+            if (ctx.VertexArray.Size == 2)
+            {
+                a.pos.z = -100.f;
+                b.pos.z = -100.f;
+                c.pos.z = -100.f;
+            }
             renderTriangle(&a, &b, &c);
         }
-        return;
+    }
+    else if (mode == GL_TRIANGLE_STRIP)
+    {
+        const GLint vstep = (ctx.VertexArray.Size + ctx.VertexArray.Stride);
+        const GLint tstep = (ctx.TexCoordArray.Size + ctx.TexCoordArray.Stride);
+        const GLint vlast = first + count;
+        GLint vi = first;
+        GLint ti = first;
+        TriVert a, b, c;
+        bool odd = true;
+        while (vi < vlast)
+        {
+            a.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi]); vi += vstep;
+            b.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi]);
+            c.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi + vstep]); // todo; this is going to load past end on last one.
+            if (ctx.Texture2DEnabled)
+            {
+                a.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti]); ti += tstep;
+                b.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti]);
+                c.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti + tstep]); // todo; this is going to load past end on last one.
+            }
+            // todo; this is silly
+            if (ctx.VertexArray.Size == 2)
+            {
+                a.pos.z = -100.f;
+                b.pos.z = -100.f;
+                c.pos.z = -100.f;
+            }
+            if (odd)
+                renderTriangle(&a, &b, &c);
+            else
+                renderTriangle(&a, &c, &b);
+            odd = !odd;
+        }
     }
     else
     {

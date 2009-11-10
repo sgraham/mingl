@@ -152,6 +152,7 @@ struct TriVert
     Vec4 pos;
     Vec4 tex;
     Vec4 clr;
+    unsigned char debug;
 };
 
 class Gradients
@@ -213,9 +214,11 @@ class Edge
             const float yprestep = Y - v1.pos.y;
             const float realWidth = v2.pos.x - v1.pos.x;
             const float realHeight = v2.pos.y - v1.pos.y;
+            printf("realwidth/height: %f, %f\n", realWidth, realHeight);
 
-            X = (realWidth * yprestep) / realHeight + v1.pos.x;
+            X = ceil((realWidth * yprestep) / realHeight + v1.pos.x);
             XStep = realWidth / realHeight;
+            printf("x, xstep: %f, %f\n", X, XStep);
 
             float xprestep = X - v1.pos.x;
 
@@ -252,7 +255,8 @@ class Edge
         float UOZ, UOZStep;
         float VOZ, VOZStep;
 };
-
+int pixelCount;
+bool firstScanLine;
 static void drawScanLine(Context::Buffer& buf, const Gradients& grads, const Edge* left, const Edge* right, const Texture* texture)
 {
     int xstart = ceil(left->X);
@@ -262,7 +266,7 @@ static void drawScanLine(Context::Buffer& buf, const Gradients& grads, const Edg
     const GLuint* texdata = texture->C;
     const int texWidth = texture->Width;
     const int texStride = texWidth;
-    const int texHeight = texture->Height;
+    //const int texHeight = texture->Height;
     int width = ceil(right->X) - xstart;
 
     float ooz = left->OOZ + xprestep * grads.dOOZdX;
@@ -272,19 +276,28 @@ static void drawScanLine(Context::Buffer& buf, const Gradients& grads, const Edg
     while (width-- > 0)
     {
         float z = 1 / ooz;
-        int u = uoz * z * texWidth;
-        int v = voz * z * texHeight;
+        float fu = (uoz * z + 0.5f);
+        float fv = (voz * z + 0.5f);
+        int u = (int)fu;// * texWidth;
+        int v = (int)fv;// * texHeight;
         //printf("u, v: %d %d\n", u, v);
-        *dest++ = *(texdata + u + (v * texStride));
+        *dest++ += *(texdata + u + (v * texStride));
+        pixelCount++;
 
         ooz += grads.dOOZdX;
         uoz += grads.dUOZdX;
         voz += grads.dVOZdX;
+        if (firstScanLine && width == 0)
+        {
+            printf("end of first = %d %d (%f %f) ending %f %f\n", u, v, fu, fv, uoz*z+0.5f, voz*z*0.5f);
+        }
     }
+    firstScanLine = false;
 }
 
 static void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* V3)
 {
+    pixelCount = 0;
     // v1 top, v2 middle, v3 bottom
     if (V1->pos.y > V3->pos.y) swap(V1, V3);
     if (V2->pos.y > V3->pos.y) swap(V2, V3);
@@ -293,7 +306,7 @@ static void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
     TriVert v1 = *V1;
     TriVert v2 = *V2;
     TriVert v3 = *V3;
-    /*printf("input pos: (%f,%f) (%f,%f) (%f,%f)\n",
+/*    printf("input pos: (%f,%f) (%f,%f) (%f,%f)\n",
             v1.pos.x, v1.pos.y,
             v2.pos.x, v2.pos.y,
             v3.pos.x, v3.pos.y);
@@ -301,14 +314,14 @@ static void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
             v1.tex.x, v1.tex.y,
             v2.tex.x, v2.tex.y,
             v3.tex.x, v3.tex.y);
-    */
+            */
 
-    v1.pos.x -= 0.5f;
-    v1.pos.y -= 0.5f;
+    /*v1.pos.x -= 0.5f;
     v2.pos.x -= 0.5f;
-    v2.pos.y -= 0.5f;
     v3.pos.x -= 0.5f;
-    v3.pos.y -= 0.5f;
+    v1.pos.y -= 0.5f;
+    v2.pos.y -= 0.5f;
+    v3.pos.y -= 0.5f;*/
 
     Gradients grads(v1, v2, v3);
     Edge edge12(grads, v1, v2, grads.OOZ1, grads.UOZ1, grads.VOZ1);
@@ -319,6 +332,7 @@ static void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
     const float xOnLong = (((v2.pos.y - v1.pos.y) * (v3.pos.x - v1.pos.x)) / (v3.pos.y - v1.pos.y)) + v1.pos.x;
     //printf("xOnLong: %f\n", xOnLong);
 
+    //printf("scanning in %c %c %c\n", v1.debug, v2.debug, v3.debug);
     const Edge* left1;
     const Edge* right1;
     const Edge* left2;
@@ -328,13 +342,16 @@ static void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
         left1 = left2 = &edge13;
         right1 = &edge12;
         right2 = &edge23;
+        printf("here\n");
     }
     else
     {
+        printf("else\n");
         left1 = &edge12;
         left2 = &edge23;
         right1 = right2 = &edge13;
     }
+    firstScanLine = true;
     int height = edge12.Height;
     while (height)
     {
@@ -350,6 +367,7 @@ static void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
         edge23.Step(); edge13.Step();
         height -= 1;
     }
+    printf("pixels: %d\n", pixelCount);
 }
 
 static GLuint floatColorToUint(float r, float g, float b, float a)
@@ -459,12 +477,15 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count)
                 c.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti]); ti += tstep; // todo; this is going to load past end on last one.
             }
             // todo; this is silly
-            if (ctx.VertexArray.Size == 2)
+            //if (ctx.VertexArray.Size == 2)
             {
                 a.pos.z = -100.f;
                 b.pos.z = -100.f;
                 c.pos.z = -100.f;
             }
+            a.debug = 'a';
+            b.debug = 'b';
+            c.debug = 'c';
             renderTriangle(&a, &b, &c);
         }
     }
@@ -489,7 +510,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count)
                 c.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti + tstep]); // todo; this is going to load past end on last one.
             }
             // todo; this is silly
-            if (ctx.VertexArray.Size == 2)
+            //if (ctx.VertexArray.Size == 2)
             {
                 a.pos.z = -100.f;
                 b.pos.z = -100.f;

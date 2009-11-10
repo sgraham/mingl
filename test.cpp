@@ -19,11 +19,11 @@ int main()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, testtex_rgba);
 
     float offset = 0.f;
-    float delta = 0.1f;
+    float delta = 1.f;
     while (DisplayIsOpen(display))
     {
         glLoadIdentity();
-        glClearColor(0.7f, 0.7f, 0.7f, 1.f);
+        glClearColor(0.f, 0.f, 0.f, 0.f);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         glColor4f(1.f, 0.f, 0.f, 1.f);
 
@@ -56,55 +56,68 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 18);
         }
 
+        if (1)
         {
-            float tristrip[] = 
+            float verts[] = 
             {
-                500.f, 100.f,
-                756.f, 100.f,
-                500.f, 356.f,
-                756.f, 356.f,
+                99.5f, -0.5f,
+                227.5f, -0.5f,
+                99.5f, 127.5f,
+
+                227.5f, -0.5f,
+                99.5f, 127.5f,
+                227.5f, 127.5f,
             };
 
-            float tristriptc[] =
+            float tcs[] =
             {
-                0.f, 0.f,
-                1.f, 0.f,
-                0.f, 1.f,
-                1.f, 1.f,
+                -0.5f, -0.5f,
+                63.5f, -0.5f,
+                -0.5f, 63.5f,
+
+                63.5f, -0.5f,
+                -0.5f, 63.5f,
+                63.5f, 63.5f,
             };
+
+            for (unsigned int i = 0; i < sizeof(verts)/sizeof(verts[0]); ++i)
+            {
+                //verts[i] -= 0.5f;
+            }
 
             offset += delta;
-            /*if (offset > 10) delta = -0.1f;
-            if (offset < -10) delta = 0.1f;
+            if (offset > 10) delta = -1.f;
+            if (offset < -10) delta = 1.f;
 
-            tristrip[0] = 500.f + offset;
-            tristrip[2] = 756.f + offset;
-            tristrip[4] = 500.f + offset;
-            tristrip[6] = 756.f + offset;
-            */
+            for (unsigned int j = 0; j < sizeof(verts)/sizeof(verts[0]); j += 2)
+            {
+                verts[j] += offset;
+                //verts[j] = (float)(int)verts[j];
+            }
 
-            glVertexPointer(2, GL_FLOAT, 0, tristrip);
-            glTexCoordPointer(2, GL_FLOAT, 0, tristriptc);
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            glVertexPointer(2, GL_FLOAT, 0, verts);
+            glTexCoordPointer(2, GL_FLOAT, 0, tcs);
+            glDrawArrays(GL_TRIANGLES, 0, sizeof(verts)/sizeof(verts[0]));
         }
 
-        /*
-        float test[] =
+        if (0)
         {
-            564.f, 100.f,
-            564.f, 164.f,
-            500.f, 164.f,
-        };
-        float tc[] =
-        {
-            1.f, 0.f,
-            1.f, 1.f,
-            0.f, 1.f,
-        };
-        glVertexPointer(2, GL_FLOAT, 0, test);
-        glTexCoordPointer(2, GL_FLOAT, 0, tc);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        */
+            float test[] =
+            {
+                756.f, 100.f,
+                756.f, 356.f,
+                500.f, 356.f,
+            };
+            float tc[] =
+            {
+                1.f, 0.f,
+                1.f, 1.f,
+                0.f, 1.f,
+            };
+            glVertexPointer(2, GL_FLOAT, 0, test);
+            glTexCoordPointer(2, GL_FLOAT, 0, tc);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
 
         DisplaySwapBuffers(display);
     }

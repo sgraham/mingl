@@ -22,19 +22,20 @@
 // file, not requiring any configuration, and not having any external
 // dependencies other than the standard platform libraries.
 //
-// The API of mingls graphics is modelled after OpenGL ES 1.0. mingl does
-// expect to have a floating point unit though, and drops all the
-// fixed-related API functions and types from the ES spec. While MinGL is
-// definitely _not_ a certified implementation of the OpenGL ES specification,
-// its goal is to conform to that specification nonetheless (again, minus the
-// fixed point functions and types).
+// The API of mingls graphics is modelled after OpenGL ES 1.0. mingl expects
+// to have a floating point unit though, and drops all the fixed-related API
+// functions and types from the ES spec. While MinGL is definitely _not_ a
+// certified implementation of the OpenGL ES specification, its goal is to
+// conform to that specification nonetheless (again, minus the fixed point
+// functions and types).
 //
 // In addition, there is a simple interface for demo-type behaviour of setting
 // up a rendering context, basic user input, and basic camera controls. It is
 // completely ignorable though, if you're only interested in the 'GL' part.
 //
 // A minimal application is simply:
-/*
+//
+#if 0
 
     #include "mingl.h"
     using namespace mingl;
@@ -50,7 +51,8 @@
         }
     }
 
-*/
+#endif
+//
 // You might also find it more pleasant to derive from MinGL and avoid the
 // "gl." prefix on calling API functions.
 //
@@ -61,8 +63,15 @@
 //
 // - Under X11, you will need to add "-lX11" to your link line. 
 //
-// If you know of a way to avoid any of these platform-specific configuration
-// requirements, please let me know.
+// - For GCC on x86, you'll need to enable vector instructions; add "-msse" to
+// the compiler command line.
+//
+// If you know of reasonable ways to avoid any of these platform-specific
+// configuration requirements, please let me know.
+//
+// If you wish to edit the code, you should grab the original from source
+// control, rather than editing mingl.h, as mingl.h is bundled together for
+// distribution purposes.
 //
 //
 // Scott Graham <scott.mingl@h4ck3r.net>
@@ -762,6 +771,9 @@ class MinGL
 }
 
 #include "mingl_impl_main_unix.h"
+
+// todo; do we want to #undef the MINGL_... we set? or all the MINGL_ that we
+// know about? or do nothing?
 
 #endif
 

@@ -1,5 +1,9 @@
 #include <stdio.h>
-#include "mingl_debug.h"
+#if WANT_DEBUG_TEST
+    #include "mingl_debug.h"
+#else
+    #include "mingl.h"
+#endif
 
 using namespace mingl;
 

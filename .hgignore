@@ -4,3 +4,4 @@ scratch/*
 testtex.cpp
 test
 tags
+mingl.h

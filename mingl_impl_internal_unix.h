@@ -1,3 +1,5 @@
+// See mingl.h for copyright and documentation.
+
 // NOTE! This file is include _into_the_body_ of the MinGL class.
 
 struct TriVert

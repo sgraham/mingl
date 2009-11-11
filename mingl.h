@@ -49,7 +49,7 @@
 // "gl." prefix on calling API functions.
 //
 // MinGL is intended to work on Windows (DirectDraw), Linux (X11), OSX,
-// Xbox360, PS3, and Wii.
+// Xbox360, PS3, and Wii. It doesn't work on all these platforms yet though.
 //
 // Platform-specific notes:
 //
@@ -58,7 +58,9 @@
 // If you know of a way to avoid any of these platform-specific configuration
 // requirements, please let me know.
 //
+//
 // Scott Graham <scott.mingl@h4ck3r.net>
+//
 
 
 namespace mingl

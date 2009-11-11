@@ -1,5 +1,4 @@
-// See mingl.h for copyright and documentation.
-
+#ifdef MINGL_PLATFORM_UNIX
 
 namespace mingl
 {
@@ -478,3 +477,5 @@ inline void MinGL::operator delete(void* p)
 }
 
 }
+
+#endif

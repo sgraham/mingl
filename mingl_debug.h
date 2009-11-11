@@ -755,13 +755,13 @@ class MinGL
         void Viewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
     private:
-        #include "mingl_impl_internal_unix.h"
+        #include "mingl_impl_inclass_unix.h"
         EventListener* mListener;
 };
 
 }
 
-#include "mingl_impl_unix.h"
+#include "mingl_impl_main_unix.h"
 
 #endif
 

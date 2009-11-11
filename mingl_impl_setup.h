@@ -24,6 +24,7 @@ template <class T> void swap(T& a, T& b)
 }
 
 // todo; detect other platforms
+// exactly one of these PLATFORM defines must be defined
 
 #ifdef unix
     #define MINGL_PLATFORM_UNIX

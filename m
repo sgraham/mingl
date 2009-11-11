@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-#
-# See mingl.h for copyright and documentation.
 
 import sys
 import os

@@ -1,4 +1,4 @@
-// See mingl.h for copyright and documentation.
+#ifdef MINGL_PLATFORM_UNIX
 
 // NOTE! This file is include _into_the_body_ of the MinGL class.
 
@@ -579,3 +579,4 @@ TKeyFlags mKeyIsReleased;
 
 DisplayImplContext ctx __attribute__((aligned(16)));
 
+#endif

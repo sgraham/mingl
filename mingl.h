@@ -1,49 +1,209 @@
+#ifndef INCLUDED_mingl_H
+#define INCLUDED_mingl_H
+
+// -----------------------------------------------------------------------
+// Please see license and copyright information at the end of this file.
 // -----------------------------------------------------------------------
 
-// mingl is a minimal graphics/demo library. Its goals are definitely not to
-// be fast, take advantage of fancy hardware features, or to show off neat
-// effects. Instead, its only goals are to be servicable to draw simple
-// dianostic scenes on many different platforms, while being distributed as
-// merely one C++ header file, and not requiring any configuration or having
-// any external dependencies other than the standard platform libraries.
+// -----------------------------------------------------------------------
+// "mingl" is a minimal graphics/demo library.
 //
-// The API of mingls graphics is modelled after OpenGL ES 1.0. It is by no
-// means complete, but a programmer familiar with OpenGL shouldn't have any
-// trouble getting something on the screen. mingl does expect to have a
-// floating point unit though, and drops all the fixed-related API functions
-// from the ES spec.
+// Its goals are definitely not to be fast, take advantage of fancy hardware
+// features, or to show off the latest neat effects.
+//
+// Instead, its goals are to be servicable to draw simple dianostic scenes on
+// many different platforms, while being distributed as merely one C++ header
+// file, not requiring any configuration, and not having any external
+// dependencies other than the standard platform libraries.
+//
+// The API of mingls graphics is modelled after OpenGL ES 1.0. mingl does
+// expect to have a floating point unit though, and drops all the
+// fixed-related API functions and types from the ES spec. While MinGL is
+// definitely _not_ a certified implementation of the OpenGL ES specification,
+// its goal is to conform to that specification nonetheless (again, minus the
+// fixed point functions and types).
 //
 // In addition, there is a simple interface for demo-type behaviour of setting
-// up a rendering context, basic user input, and basic camera controls.
+// up a rendering context, basic user input, and basic camera controls. It is
+// completely ignorable though, if you're only interested in the 'GL' part.
+//
+// A minimal application is simply:
+/*
+
+    #include "mingl.h"
+    using namespace mingl;
+
+    int main()
+    {
+        MinGL gl;
+        while (gl.IsOpen())
+        {
+            gl.ClearColor(1.f, 0.f, 0.f, 0.f);
+            gl.Clear(GL_COLOR_BUFFER_BIT);
+            gl.SwapBuffers();
+        }
+    }
+
+*/
+// You might also find it more pleasant to derive from MinGL and avoid the
+// "gl." prefix on calling API functions.
+//
+// MinGL is intended to work on Windows (DirectDraw), Linux (X11), OSX,
+// Xbox360, PS3, and Wii.
+//
+// Platform-specific notes:
+//
+// - Under X11, you will need to add "-lX11" to your link line. 
+//
+// If you know of a way to avoid any of these platform-specific configuration
+// requirements, please let me know.
+//
+// Scott Graham <scott.mingl@h4ck3r.net>
+
+
+namespace mingl
+{
+    typedef unsigned int GLenum;
+    typedef unsigned int GLbitfield;
+    typedef int GLint;
+    typedef int GLsizei;
+    typedef unsigned char GLubyte;
+    typedef unsigned int GLuint;
+    typedef float GLfloat;
+    typedef float GLclampf;
+    typedef void GLvoid;
+}
+
+#include <new> // we need to override operator new/delete to ensure alignment
+#include <stdint.h>
+#include "mingl_impl_setup.h"
 
 namespace mingl
 {
 
-class Display;
-Display* DisplayOpen(const char* title = "mingl app", int width = 1280, int height = 720);
-bool DisplayIsOpen(Display* display);
-void DisplayClose(Display* display);
-void DisplaySwapBuffers(Display* display);
+class Key
+{
+    public:
+        enum Code
+        {
+            Enter          = '\n',      ///< enter key
+            Backspace      = '\b',      ///< backspace key
+            Tab            = '\t',      ///< tab key
+            Cancel         = 0x03,      ///< cancel key
+            Clear          = 0x0C,      ///< clear key
+            Shift          = 0x10,      ///< shift key
+            Control        = 0x11,      ///< control key
+            Alt            = 0x12,      ///< alt key
+            Pause          = 0x13,      ///< pause key
+            CapsLock       = 0x14,      ///< capslock key
+            Escape         = 0x1B,      ///< escape key
+            Space          = 0x20,      ///< space key
+            PageUp         = 0x21,      ///< page up key
+            PageDown       = 0x22,      ///< page down key
+            End            = 0x23,      ///< end key
+            Home           = 0x24,      ///< home key
+            Left           = 0x25,      ///< left key
+            Up             = 0x26,      ///< up arrow key
+            Right          = 0x27,      ///< right arrow key
+            Down           = 0x28,      ///< down arrow key
+            Comma          = 0x2C,      ///< comma key ','
+            Period         = 0x2E,      ///< period key '.'
+            Slash          = 0x2F,      ///< slash key '/'
+            Zero           = 0x30,      ///< zero key
+            One            = 0x31,      ///< one key
+            Two            = 0x32,      ///< two key
+            Three          = 0x33,      ///< three key
+            Four           = 0x34,      ///< four key
+            Five           = 0x35,      ///< five key
+            Six            = 0x36,      ///< six key
+            Seven          = 0x37,      ///< seven key
+            Eight          = 0x38,      ///< eight key
+            Nine           = 0x39,      ///< nine key
+            SemiColon      = 0x3B,      ///< semicolon key ';'
+            Equals         = 0x3D,      ///< equals key '='
+            A              = 0x41,      ///< a key
+            B              = 0x42,      ///< b key
+            C              = 0x43,      ///< c key
+            D              = 0x44,      ///< d key
+            E              = 0x45,      ///< e key
+            F              = 0x46,      ///< f key
+            G              = 0x47,      ///< g key
+            H              = 0x48,      ///< h key
+            I              = 0x49,      ///< i key
+            J              = 0x4A,      ///< j key
+            K              = 0x4B,      ///< k key
+            L              = 0x4C,      ///< l key
+            M              = 0x4D,      ///< m key
+            N              = 0x4E,      ///< n key
+            O              = 0x4F,      ///< o key
+            P              = 0x50,      ///< p key
+            Q              = 0x51,      ///< q key
+            R              = 0x52,      ///< r key
+            S              = 0x53,      ///< s key
+            T              = 0x54,      ///< t key
+            U              = 0x55,      ///< u key
+            V              = 0x56,      ///< v key
+            W              = 0x57,      ///< w key
+            X              = 0x58,      ///< x key
+            Y              = 0x59,      ///< y key
+            Z              = 0x5A,      ///< z key
+            OpenBracket    = 0x5B,      ///< open bracket key '['
+            BackSlash      = 0x5C,      ///< back slash key '\'
+            CloseBracket   = 0x5D,      ///< close bracket key ']'
+            NumPad0        = 0x60,      ///< numpad 0 key
+            NumPad1        = 0x61,      ///< numpad 1 key
+            NumPad2        = 0x62,      ///< numpad 2 key
+            NumPad3        = 0x63,      ///< numpad 3 key
+            NumPad4        = 0x64,      ///< numpad 4 key
+            NumPad5        = 0x65,      ///< numpad 5 key
+            NumPad6        = 0x66,      ///< numpad 6 key
+            NumPad7        = 0x67,      ///< numpad 7 key
+            NumPad8        = 0x68,      ///< numpad 8 key
+            NumPad9        = 0x69,      ///< numpad 9 key
+            Multiply       = 0x6A,      ///< multiply key '*'
+            Add            = 0x6B,      ///< add key '+'
+            Separator      = 0x6C,      ///< separator key '-'
+            Subtract       = 0x6D,      ///< subtract key '-'
+            Decimal        = 0x6E,      ///< decimal key '.'
+            Divide         = 0x6F,      ///< divide key '/'
+            F1             = 0x70,      ///< F1 key
+            F2             = 0x71,      ///< F2 key
+            F3             = 0x72,      ///< F3 key
+            F4             = 0x73,      ///< F4 key
+            F5             = 0x74,      ///< F5 key
+            F6             = 0x75,      ///< F6 key
+            F7             = 0x76,      ///< F7 key
+            F8             = 0x77,      ///< F8 key
+            F9             = 0x78,      ///< F9 key
+            F10            = 0x79,      ///< F10 key
+            F11            = 0x7A,      ///< F11 key
+            F12            = 0x7B,      ///< F12 key
+            Delete         = 0x7F,      ///< delete key
+            NumLock        = 0x90,      ///< numlock key
+            ScrollLock     = 0x91,      ///< scroll lock key
+            PrintScreen    = 0x9A,      ///< print screen key
+            Insert         = 0x9B,      ///< insert key
+            Help           = 0x9C,      ///< help key
+            Meta           = 0x9D,      ///< meta key
+            BackQuote      = 0xC0,      ///< backquote key
+            Quote          = 0xDE,      ///< quote key
+            Final          = 0x18,      ///< final key
+            Convert        = 0x1C,      ///< convert key
+            NonConvert     = 0x1D,      ///< non convert key
+            Accept         = 0x1E,      ///< accept key
+            ModeChange     = 0x1F,      ///< mode change key
+            Kana           = 0x15,      ///< kana key
+            Kanji          = 0x19,      ///< kanji key
+            Undefined      = 0x0        ///< undefined key
+        };
 
-// -----------------------------------------------------------------------
-// -----------------------------------------------------------------------
-// -----------------------------------------------------------------------
-// The rendering API follows
-// -----------------------------------------------------------------------
-// -----------------------------------------------------------------------
-// -----------------------------------------------------------------------
+        Key() : code(Undefined) {}
+        Key(Code code) : code(code) {}
+        operator Code() const { return code; }
 
-typedef unsigned int GLenum;
-typedef unsigned int GLbitfield;
-typedef int GLint;
-typedef int GLsizei;
-typedef unsigned char GLubyte;
-typedef unsigned int GLuint;
-typedef float GLfloat;
-typedef float GLclampf;
-typedef void GLvoid;
-
-/*************************************************************/
+    private:
+        Code code;
+} MINGL_POST_ALIGN(16);
 
 enum ClearBufferMask {
     GL_DEPTH_BUFFER_BIT =             0x00000100,
@@ -93,7 +253,7 @@ enum BlendingFactorSrc {
 /*  GL_DST_ALPHA */
 /*  GL_ONE_MINUS_DST_ALPHA */
 };
- 
+
 /* ColorMaterialFace */
 /*      GL_FRONT_AND_BACK */
 
@@ -465,84 +625,137 @@ enum LightName {
     GL_LIGHT7 =                       0x4007,
 };
 
+// override whatever you're interested in and call SetListener on the MinGL
+// object to register for events.
+class EventListener
+{
+    public:
+        virtual ~EventListener() {}
+        virtual void OnActivate() {}
+        virtual void OnClose() {}
+        virtual void OnKeyDown(Key key) {}
+        virtual void OnKeyPressed(Key key) {}
+        virtual void OnKeyUp(Key key) {}
 
-void glActiveTexture(GLenum texture);
-void glAlphaFunc(GLenum func, GLclampf ref);
-void glBindTexture(GLenum target, GLuint texture);
-void glBlendFunc(GLenum sfactor, GLenum dfactor);
-void glClear(GLbitfield mask);
-void glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
-void glClearDepthf(GLclampf depth);
-void glClearStencil(GLint s);
-void glClientActiveTexture(GLenum texture);
-void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
-void glColorMask(bool red, bool green, bool blue, bool alpha);
-void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
-void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid *data);
-void glCompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const GLvoid *data);
-void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
-void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
-void glCullFace(GLenum mode);
-void glDeleteTextures(GLsizei n, const GLuint *textures);
-void glDepthFunc(GLenum func);
-void glDepthMask(bool flag);
-void glDepthRangef(GLclampf zNear, GLclampf zFar);
-void glDisable(GLenum cap);
-void glDisableClientState(GLenum array);
-void glDrawArrays(GLenum mode, GLint first, GLsizei count);
-void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices);
-void glEnable(GLenum cap);
-void glEnableClientState(GLenum array);
-void glFinish(void);
-void glFlush(void);
-void glFogf(GLenum pname, GLfloat param);
-void glFogfv(GLenum pname, const GLfloat *params);
-void glFrontFace(GLenum mode);
-void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar);
-void glGenTextures(GLsizei n, GLuint *textures);
-GLenum glGetError(void);
-void glGetIntegerv(GLenum pname, GLint *params);
-const GLubyte * glGetString(GLenum name);
-void glHint(GLenum target, GLenum mode);
-void glLightModelf(GLenum pname, GLfloat param);
-void glLightModelfv(GLenum pname, const GLfloat *params);
-void glLightf(GLenum light, GLenum pname, GLfloat param);
-void glLightfv(GLenum light, GLenum pname, const GLfloat *params);
-void glLineWidth(GLfloat width);
-void glLoadIdentity(void);
-void glLoadMatrixf(const GLfloat *m);
-void glLogicOp(GLenum opcode);
-void glMaterialf(GLenum face, GLenum pname, GLfloat param);
-void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params);
-void glMatrixMode(GLenum mode);
-void glMultMatrixf(const GLfloat *m);
-void glMultiTexCoord4f(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q);
-void glNormal3f(GLfloat nx, GLfloat ny, GLfloat nz);
-void glNormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer);
-void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar);
-void glPixelStorei(GLenum pname, GLint param);
-void glPointSize(GLfloat size);
-void glPolygonOffset(GLfloat factor, GLfloat units);
-void glPopMatrix(void);
-void glPushMatrix(void);
-void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
-void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
-void glScalef(GLfloat x, GLfloat y, GLfloat z);
-void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);
-void glShadeModel(GLenum mode);
-void glStencilFunc(GLenum func, GLint ref, GLuint mask);
-void glStencilMask(GLuint mask);
-void glStencilOp(GLenum fail, GLenum zfail, GLenum zpass);
-void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
-void glTexEnvf(GLenum target, GLenum pname, GLfloat param);
-void glTexEnvfv(GLenum target, GLenum pname, const GLfloat *params);
-void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
-void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
-void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
-void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
-void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
-void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
+        // should the default key handlers be called (Esc to quit, etc.)
+        virtual bool DoDefaultKeyHandlers() { return true; }
+};
+
+
+//
+// This is the main entry point.
+//
+class MinGL
+{
+    public:
+        MinGL(const char* title = "mingl app", int width = 1280, int height = 720);
+        virtual ~MinGL();
+
+        bool IsOpen() const;
+        void Close();
+        void SwapBuffers();
+
+        void SetListener(EventListener* listener) { mListener = listener; }
+
+        void* operator new(size_t size);
+        void operator delete(void* p);
+
+        // ---------------------------------------------- 
+        // ---------------------------------------------- 
+        // ---------------------------------------------- 
+        // Rendering api follows
+        // ---------------------------------------------- 
+        // ---------------------------------------------- 
+        // ---------------------------------------------- 
+
+
+        void ActiveTexture(GLenum texture);
+        void AlphaFunc(GLenum func, GLclampf ref);
+        void BindTexture(GLenum target, GLuint texture);
+        void BlendFunc(GLenum sfactor, GLenum dfactor);
+        void Clear(GLbitfield mask);
+        void ClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
+        void ClearDepthf(GLclampf depth);
+        void ClearStencil(GLint s);
+        void ClientActiveTexture(GLenum texture);
+        void Color4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+        void ColorMask(bool red, bool green, bool blue, bool alpha);
+        void ColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
+        void CompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid *data);
+        void CompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const GLvoid *data);
+        void CopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
+        void CopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+        void CullFace(GLenum mode);
+        void DeleteTextures(GLsizei n, const GLuint *textures);
+        void DepthFunc(GLenum func);
+        void DepthMask(bool flag);
+        void DepthRangef(GLclampf zNear, GLclampf zFar);
+        void Disable(GLenum cap);
+        void DisableClientState(GLenum array);
+        void DrawArrays(GLenum mode, GLint first, GLsizei count);
+        void DrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices);
+        void Enable(GLenum cap);
+        void EnableClientState(GLenum array);
+        void Finish(void);
+        void Flush(void);
+        void Fogf(GLenum pname, GLfloat param);
+        void Fogfv(GLenum pname, const GLfloat *params);
+        void FrontFace(GLenum mode);
+        void Frustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar);
+        void GenTextures(GLsizei n, GLuint *textures);
+        GLenum GetError(void);
+        void GetIntegerv(GLenum pname, GLint *params);
+        const GLubyte * GetString(GLenum name);
+        void Hint(GLenum target, GLenum mode);
+        void LightModelf(GLenum pname, GLfloat param);
+        void LightModelfv(GLenum pname, const GLfloat *params);
+        void Lightf(GLenum light, GLenum pname, GLfloat param);
+        void Lightfv(GLenum light, GLenum pname, const GLfloat *params);
+        void LineWidth(GLfloat width);
+        void LoadIdentity(void);
+        void LoadMatrixf(const GLfloat *m);
+        void LogicOp(GLenum opcode);
+        void Materialf(GLenum face, GLenum pname, GLfloat param);
+        void Materialfv(GLenum face, GLenum pname, const GLfloat *params);
+        void MatrixMode(GLenum mode);
+        void MultMatrixf(const GLfloat *m);
+        void MultiTexCoord4f(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q);
+        void Normal3f(GLfloat nx, GLfloat ny, GLfloat nz);
+        void NormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer);
+        void Orthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar);
+        void PixelStorei(GLenum pname, GLint param);
+        void PointSize(GLfloat size);
+        void PolygonOffset(GLfloat factor, GLfloat units);
+        void PopMatrix(void);
+        void PushMatrix(void);
+        void ReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
+        void Rotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
+        void Scalef(GLfloat x, GLfloat y, GLfloat z);
+        void Scissor(GLint x, GLint y, GLsizei width, GLsizei height);
+        void ShadeModel(GLenum mode);
+        void StencilFunc(GLenum func, GLint ref, GLuint mask);
+        void StencilMask(GLuint mask);
+        void StencilOp(GLenum fail, GLenum zfail, GLenum zpass);
+        void TexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
+        void TexEnvf(GLenum target, GLenum pname, GLfloat param);
+        void TexEnvfv(GLenum target, GLenum pname, const GLfloat *params);
+        void TexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
+        void TexParameterf(GLenum target, GLenum pname, GLfloat param);
+        void TexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
+        void Translatef(GLfloat x, GLfloat y, GLfloat z);
+        void VertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
+        void Viewport(GLint x, GLint y, GLsizei width, GLsizei height);
+
+    private:
+        #include "mingl_impl_internal.h"
+        EventListener* mListener;
+};
+
 }
+
+#include "mingl_impl.h"
+
+#endif
 
 // -----------------------------------------------------------------------
 // LICENSE INFORMATION FOLLOWS
@@ -580,35 +793,8 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 // -----------------------------------------------------------------------
 
 // -----------------------------------------------------------------------
-// Portions of mingl are based on TinyGL by Fabrice Bellard. Its original
-// license follows:
-/*
-    (C) 1997-1998 Fabrice Bellard
-
-    This software is provided 'as-is', without any express or implied
-    warranty.  In no event will the authors be held liable for any damages
-    arising from the use of this software.
-
-    Permission is granted to anyone to use this software for any purpose,
-    including commercial applications, and to alter it and redistribute it
-    freely, subject to the following restrictions:
-
-    1. The origin of this software must not be misrepresented; you must not
-        claim that you wrote the original software. If you use this software
-        in a product, an acknowledgment in the product and its documentation 
-        *is* required.
-    2. Altered source versions must be plainly marked as such, and must not be
-        misrepresented as being the original software.
-    3. This notice may not be removed or altered from any source distribution.
-
-    If you redistribute modified sources, I would appreciate that you
-    include in the files history information documenting your changes.
-*/
-// -----------------------------------------------------------------------
-
-// -----------------------------------------------------------------------
 // The remainder of mingl is written by Scott Graham. It is also licensed
-// under a 'zlib'-style license, which follows:
+// under a 'zlib'-style license, as follows:
 /*
     Copyright (C) 2009 Scott Graham
 

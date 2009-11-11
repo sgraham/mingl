@@ -3,3 +3,4 @@ scratch/*
 *.swp
 testtex.cpp
 test
+tags

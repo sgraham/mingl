@@ -29,6 +29,4 @@ template <class T> void swap(T& a, T& b)
     #define MINGL_PLATFORM_UNIX
 #endif
 
-#ifdef MINGL_PLATFORM_UNIX
-    #include "mingl_impl_setup_unix.h"
-#endif
+#include "mingl_impl_setup_unix.h"

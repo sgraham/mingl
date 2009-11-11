@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "mingl.h"
+#include "mingl_debug.h"
 
 using namespace mingl;
 

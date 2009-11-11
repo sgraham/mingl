@@ -1,3 +1,5 @@
+#ifdef MINGL_PLATFORM_UNIX
+
 // todo; remove all these
 #include <stdio.h>
 #include <stdlib.h>
@@ -74,3 +76,5 @@ struct Texture
 
 
 }
+
+#endif

@@ -1,3 +1,9 @@
+//STRIP
+//STRIP mingl_debug.h is intended to be used while working on the mingl code.
+//STRIP When it's built for 'dist' everything prefixed with //STRIP will be
+//STRIP will be removed, and "" includes will be processed in place so that
+//STRIP one file need be distributed/included/in the path.
+//STRIP
 #ifndef INCLUDED_mingl_H
 #define INCLUDED_mingl_H
 
@@ -749,13 +755,13 @@ class MinGL
         void Viewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
     private:
-        #include "mingl_impl_internal.h"
+        #include "mingl_impl_internal_unix.h"
         EventListener* mListener;
 };
 
 }
 
-#include "mingl_impl.h"
+#include "mingl_impl_unix.h"
 
 #endif
 

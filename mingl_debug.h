@@ -764,6 +764,7 @@ class MinGL
         void Viewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
     private:
+        #include "mingl_impl_inclass_common.h"
         #include "mingl_impl_inclass_unix.h"
         EventListener* mListener;
 };

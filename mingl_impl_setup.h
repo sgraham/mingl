@@ -13,16 +13,6 @@
     #define MINGL_ERR_WRET(e,r) do { MINGL_ASSERT(false && #e); return r; } while(0)
 #endif
 
-namespace mingl
-{
-template <class T> void swap(T& a, T& b)
-{
-    T c = a;
-    a = b;
-    b = c;
-}
-}
-
 // todo; detect other platforms
 // exactly one of these PLATFORM defines must be defined
 
@@ -35,6 +25,13 @@ template <class T> void swap(T& a, T& b)
 
 namespace mingl
 {
+
+template <class T> void swap(T& a, T& b)
+{
+    T c = a;
+    a = b;
+    b = c;
+}
 
 enum MatrixModeE
 {

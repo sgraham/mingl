@@ -1,7 +1,11 @@
 namespace mingl
 {
 
-inline void MinGL::ActiveTexture(GLenum texture) { MINGL_ASSERT(0); }
+inline void MinGL::ActiveTexture(GLenum texture)
+{
+    MINGL_ASSERT(0);
+}
+
 inline void MinGL::AlphaFunc(GLenum func, GLclampf ref) { MINGL_ASSERT(0); }
 
 inline void MinGL::BindTexture(GLenum target, GLuint texture)
@@ -42,7 +46,11 @@ inline void MinGL::ClearColor(GLclampf red, GLclampf green, GLclampf blue, GLcla
 
 inline void MinGL::ClearDepthf(GLclampf depth) { MINGL_ASSERT(0); }
 inline void MinGL::ClearStencil(GLint s) { MINGL_ASSERT(0); }
-inline void MinGL::ClientActiveTexture(GLenum texture) { MINGL_ASSERT(0); }
+inline void MinGL::ClientActiveTexture(GLenum texture)
+{
+    if (texture > GL_TEXTURE0 + TU_NumTextureUnits) MINGL_ERR(GL_INVALID_ENUM);
+    ctx.CurActiveTexture = texture;
+}
 
 inline void MinGL::Color4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
@@ -79,8 +87,9 @@ inline void MinGL::DrawArrays(GLenum mode, GLint first, GLsizei count)
     TriVert a, b, c;
     if (mode == GL_TRIANGLES)
     {
+        // todo; multitex
         const GLint vstep = (ctx.VertexArray.Size + ctx.VertexArray.Stride);
-        const GLint tstep = (ctx.TexCoordArray.Size + ctx.TexCoordArray.Stride);
+        const GLint tstep = (ctx.TexCoordArray[0].Size + ctx.TexCoordArray[0].Stride);
         const GLint vlast = first + count;
         GLint vi = first;
         GLint ti = first;
@@ -91,9 +100,9 @@ inline void MinGL::DrawArrays(GLenum mode, GLint first, GLsizei count)
             c.pos = Vec4(&ctx.VertexArray.Data[vi]); vi += vstep; // todo; this is going to load past end on last one.
             if (ctx.Texture2DEnabled)
             {
-                a.tex = Vec4(&ctx.TexCoordArray.Data[ti]); ti += tstep;
-                b.tex = Vec4(&ctx.TexCoordArray.Data[ti]); ti += tstep;
-                c.tex = Vec4(&ctx.TexCoordArray.Data[ti]); ti += tstep; // todo; this is going to load past end on last one.
+                a.tex = Vec4(&ctx.TexCoordArray[0].Data[ti]); ti += tstep;
+                b.tex = Vec4(&ctx.TexCoordArray[0].Data[ti]); ti += tstep;
+                c.tex = Vec4(&ctx.TexCoordArray[0].Data[ti]); ti += tstep; // todo; this is going to load past end on last one.
             }
             // todo; this is silly
             if (ctx.VertexArray.Size == 2)
@@ -111,7 +120,7 @@ inline void MinGL::DrawArrays(GLenum mode, GLint first, GLsizei count)
     else if (mode == GL_TRIANGLE_STRIP)
     {
         const GLint vstep = (ctx.VertexArray.Size + ctx.VertexArray.Stride);
-        const GLint tstep = (ctx.TexCoordArray.Size + ctx.TexCoordArray.Stride);
+        const GLint tstep = (ctx.TexCoordArray[0].Size + ctx.TexCoordArray[0].Stride);
         const GLint vlast = first + count;
         GLint vi = first;
         GLint ti = first;
@@ -124,9 +133,9 @@ inline void MinGL::DrawArrays(GLenum mode, GLint first, GLsizei count)
             c.pos = Vec4(&ctx.VertexArray.Data[vi + vstep]); // todo; this is going to load past end on last one.
             if (ctx.Texture2DEnabled)
             {
-                a.tex = Vec4(&ctx.TexCoordArray.Data[ti]); ti += tstep;
-                b.tex = Vec4(&ctx.TexCoordArray.Data[ti]);
-                c.tex = Vec4(&ctx.TexCoordArray.Data[ti + tstep]); // todo; this is going to load past end on last one.
+                a.tex = Vec4(&ctx.TexCoordArray[0].Data[ti]); ti += tstep;
+                b.tex = Vec4(&ctx.TexCoordArray[0].Data[ti]);
+                c.tex = Vec4(&ctx.TexCoordArray[0].Data[ti + tstep]); // todo; this is going to load past end on last one.
             }
             // todo; this is silly
             if (ctx.VertexArray.Size == 2)
@@ -274,9 +283,9 @@ inline void MinGL::StencilOp(GLenum fail, GLenum zfail, GLenum zpass) { MINGL_AS
 
 inline void MinGL::TexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
-    ctx.TexCoordArray.Data = reinterpret_cast<const float*>(pointer);
-    ctx.TexCoordArray.Size = size;
-    ctx.TexCoordArray.Stride = stride;
+    ctx.TexCoordArray[0].Data = reinterpret_cast<const float*>(pointer);
+    ctx.TexCoordArray[0].Size = size;
+    ctx.TexCoordArray[0].Stride = stride;
     if (size < 2 || size > 4) MINGL_ERR(GL_INVALID_VALUE);
     if (type != GL_FLOAT) MINGL_ERR(GL_INVALID_ENUM);
     if (stride < 0) MINGL_ERR(GL_INVALID_VALUE);

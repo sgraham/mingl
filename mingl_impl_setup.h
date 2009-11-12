@@ -41,6 +41,13 @@ enum MatrixModeE
     MM_NumMatrixModes,
 };
 
+enum TextureUnitsE
+{
+    TU_TexUnit0 = 0,
+    TU_TexUnit1 = 1,
+    TU_NumTextureUnits,
+};
+
 enum ClientStateE
 {
     CS_VertexArray = 0x001,

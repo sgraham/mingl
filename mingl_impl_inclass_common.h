@@ -130,10 +130,19 @@ class Edge
 struct DisplayImplContext
 {
     DisplayImplContext()
-        : CurTexId(0)
     {
         for (int i = 0; i < MM_NumMatrixModes; ++i)
             CurMatrix[i] = &MatrixStack[i][0];
+        ClearDepth = 0.f;
+        ClearColor = 0;
+        Error = 0;
+        CurTexId = 1;
+        CurColor = Vec4(1.f, 1.f, 1.f, 1.f);
+        CurNormal = Vec4(0.f, 0.f, 1.f, 0.f);
+        for (int i = 0; i < TU_NumTextureUnits; ++i)
+            CurTexCoords[i] = Vec4(0.f, 0.f, 0.f, 1.f);
+        CurActiveTexture = 0;
+        Texture2DEnabled = false;
     }
 
     MatrixModeE MatrixMode;
@@ -173,12 +182,17 @@ struct DisplayImplContext
     };
     ArrayState VertexArray;
     ArrayState ColorArray;
-    ArrayState TexCoordArray;
+    ArrayState TexCoordArray[TU_NumTextureUnits];
+    int CurActiveTexture;
 
     bool Texture2DEnabled;
     Texture* CurrentTexture;
     std::map<GLuint, Texture*> AllTextures;
     int CurTexId;
+
+    Vec4 CurColor;
+    Vec4 CurNormal;
+    Vec4 CurTexCoords[TU_NumTextureUnits];
 };
 
 inline void drawScanLine(const Gradients& grads, const Edge* left, const Edge* right)

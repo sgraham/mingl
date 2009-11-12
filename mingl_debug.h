@@ -88,6 +88,7 @@ namespace mingl
     typedef unsigned int GLuint;
     typedef float GLfloat;
     typedef float GLclampf;
+    typedef bool GLboolean;
     typedef void GLvoid;
 }
 
@@ -696,7 +697,7 @@ class MinGL
         void ClearStencil(GLint s);
         void ClientActiveTexture(GLenum texture);
         void Color4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
-        void ColorMask(bool red, bool green, bool blue, bool alpha);
+        void ColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
         void ColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
         void CompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid *data);
         void CompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const GLvoid *data);
@@ -705,7 +706,7 @@ class MinGL
         void CullFace(GLenum mode);
         void DeleteTextures(GLsizei n, const GLuint *textures);
         void DepthFunc(GLenum func);
-        void DepthMask(bool flag);
+        void DepthMask(GLboolean flag);
         void DepthRangef(GLclampf zNear, GLclampf zFar);
         void Disable(GLenum cap);
         void DisableClientState(GLenum array);
@@ -722,7 +723,7 @@ class MinGL
         void GenTextures(GLsizei n, GLuint *textures);
         GLenum GetError(void);
         void GetIntegerv(GLenum pname, GLint *params);
-        const GLubyte * GetString(GLenum name);
+        const GLubyte* GetString(GLenum name);
         void Hint(GLenum target, GLenum mode);
         void LightModelf(GLenum pname, GLfloat param);
         void LightModelfv(GLenum pname, const GLfloat *params);
@@ -747,6 +748,7 @@ class MinGL
         void PushMatrix(void);
         void ReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
         void Rotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
+        void SampleCoverage(GLclampf value, GLboolean invert);
         void Scalef(GLfloat x, GLfloat y, GLfloat z);
         void Scissor(GLint x, GLint y, GLsizei width, GLsizei height);
         void ShadeModel(GLenum mode);

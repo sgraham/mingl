@@ -56,7 +56,7 @@ enum ClientStateE
     CS_TexCoordArray = 0x008,
 };
 
-enum { MaxMatrixStackDepth = 32 };
+enum { MaxMatrixStackDepth = 16 };
 
 struct Texture
 {

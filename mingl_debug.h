@@ -22,7 +22,7 @@
 // file, not requiring any configuration, and not having any external
 // dependencies other than the standard platform libraries.
 //
-// The API of mingls graphics is modelled after OpenGL ES 1.0. mingl expects
+// The API of mingl's graphics is modelled after OpenGL ES 1.0. mingl expects
 // to have a floating point unit though, and drops all the fixed-related API
 // functions and types from the ES spec. While MinGL is definitely _not_ a
 // certified implementation of the OpenGL ES specification, its goal is to
@@ -769,6 +769,8 @@ class MinGL
 };
 
 }
+
+#include "mingl_impl_main_common.h"
 
 #include "mingl_impl_main_unix.h"
 

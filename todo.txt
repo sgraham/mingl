@@ -1,2 +1,1 @@
-dist script
 backtick, some other keys don't work on x11

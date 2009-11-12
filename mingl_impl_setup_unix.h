@@ -30,51 +30,53 @@
 
 namespace mingl
 {
-
-enum MatrixModeE
-{
-    MODELVIEW = 0,
-    PROJECTION = 1,
-    TEXTURE = 2,
-    NUM_MATRIX_MODES
-};
-
-enum ClientStateE
-{
-    VERTEX_ARRAY   = 0x001,
-    COLOR_ARRAY    = 0x002,
-    NORMAL_ARRAY   = 0x004,
-    TEXCOORD_ARRAY = 0x004,
-};
-
-enum { MAX_MATRIX_STACK_DEPTH = 32 };
-
-struct Mat44
-{
-    __m128 l1, l2, l3, l4;
-} MINGL_POST_ALIGN(16);
-
-union Vec4
-{
-    __m128 v;
-    struct
-    {
-        float x, y, z, w;
-    };
-};
-
-struct Texture
-{
-    GLuint* C;
-    int Width;
-    int Height;
-    ~Texture()
-    {
-        delete[] C;
-    }
-};
-
-
+    typedef __m128 NativeVectorType;
 }
+
+#define MINGL_VECTOR_LOAD_UNALIGNED(r, fptr) do { r = _mm_loadu_ps(fptr); } while(0)
+
+#define MINGL_VECTOR_SET_FROM_FLOATS(r, a, b, c, d) do { r = _mm_setr_ps(a, b, c, d); } while(0)
+
+#define MINGL_VECTOR_SPLAT_1(r, f) do { r = _mm_set1_ps(f); } while(0)
+
+#define MINGL_VECTOR_SPLAT_I(r, v, index) do { r = _mm_shuffle_ps(v, v, _MM_SHUFFLE(index, index, index, index)); } while(0)
+
+// todo; presumably there's a non-ass way to do this
+#define MINGL_VECTOR_CEIL(r, v0) do {                   \
+    float af;                                           \
+    _mm_store_ss(&af, v0);                              \
+    af = ceil(af);                                      \
+    r = _mm_set1_ps(af);                                \
+} while(0)
+
+// todo; presumably there's a non-ass way to do this
+#define MINGL_VECTOR_FLOOR(r, v0) do {                  \
+    float af;                                           \
+    _mm_store_ss(&af, v0);                              \
+    af = floor(af);                                     \
+    r = _mm_set1_ps(af);                                \
+} while(0)
+
+#define MINGL_VECTOR_ADD(r, v0, v1) do { r = _mm_add_ps(v0, v1); } while(0)
+
+#define MINGL_VECTOR_SUBTRACT(r, v0, v1) do { r = _mm_sub_ps(v0, v1); } while(0)
+
+#define MINGL_VECTOR_MULTIPLY(r, v0, v1) do { r = _mm_mul_ps(v0, v1); } while(0)
+
+#define MINGL_VECTOR_DIVIDE(r, v0, v1) do { r = _mm_div_ps(v0, v1); } while(0)
+
+#define MINGL_VECTOR_SCALAR_IS_LESS(r, v0, v1) do {     \
+    float af, bf;                                       \
+    _mm_store_ss(&af, v0);                              \
+    _mm_store_ss(&bf, v1);                              \
+    return af < bf;                                     \
+} while(0)
+
+#define MINGL_VECTOR_SCALAR_IS_GREATER(r, v0, v1) do {  \
+    float af, bf;                                       \
+    _mm_store_ss(&af, v0);                              \
+    _mm_store_ss(&bf, v1);                              \
+    return af > bf;                                     \
+} while(0)
 
 #endif

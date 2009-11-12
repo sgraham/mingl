@@ -16,8 +16,8 @@ def test(wantDebug=True):
     """build simple test exe and run it"""
     plat = platform.uname()[0]
     if plat == "Linux":
-        cmd("g++ -msse -Wall -fstrict-aliasing -Wextra -Wno-unused-parameter -Werror %s test.cpp test2.cpp testtex.cpp -lX11 -o test"
-                % ("-g -DWANT_DEBUG_TEST" if wantDebug else "-O3"))
+        cmd("g++ -msse -Wall -fstrict-aliasing -Wextra -Wno-unused-parameter -Werror -g %s test.cpp test2.cpp testtex.cpp -lX11 -o test"
+                % ("" if wantDebug else "-O3 -DWANT_DIST_TEST"))
         cmd("./test")
     else:
         print "don't know how to build and run"

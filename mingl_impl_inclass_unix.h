@@ -15,23 +15,25 @@ class Gradients
     public:
         Gradients(const TriVert& v1, const TriVert& v2, const TriVert& v3)
         {
-            const float dx23 = v2.pos.x - v3.pos.x;
-            const float dy13 = v1.pos.y - v3.pos.y;
-            const float dx13 = v1.pos.x - v3.pos.x;
-            const float dy23 = v2.pos.y - v3.pos.y;
+            const float dx23 = v2.pos.X() - v3.pos.X();
+            const float dy13 = v1.pos.Y() - v3.pos.Y();
+            const float dx13 = v1.pos.X() - v3.pos.X();
+            const float dy23 = v2.pos.Y() - v3.pos.Y();
             const float oodX = 1.f / ((dx23 * dy13) - (dx13 * dy23));
 
-            float oodY = -oodX;
+            const float oodY = -oodX;
+            //printf("oodX, oodY: %f, %f\n", oodX, oodY);
 
-            OOZ1 = 1.f / v1.pos.z;
-            OOZ2 = 1.f / v2.pos.z;
-            OOZ3 = 1.f / v3.pos.z;
-            UOZ1 = v1.tex.x * OOZ1;
-            UOZ2 = v2.tex.x * OOZ2;
-            UOZ3 = v3.tex.x * OOZ3;
-            VOZ1 = v1.tex.y * OOZ1;
-            VOZ2 = v2.tex.y * OOZ2;
-            VOZ3 = v3.tex.y * OOZ3;
+            OOZ1 = 1.f / v1.pos.Z();
+            OOZ2 = 1.f / v2.pos.Z();
+            OOZ3 = 1.f / v3.pos.Z();
+            //printf("OOZ:  %f, %f, %f\n", OOZ1, OOZ2, OOZ3);
+            UOZ1 = v1.tex.X() * OOZ1;
+            UOZ2 = v2.tex.X() * OOZ2;
+            UOZ3 = v3.tex.X() * OOZ3;
+            VOZ1 = v1.tex.Y() * OOZ1;
+            VOZ2 = v2.tex.Y() * OOZ2;
+            VOZ3 = v3.tex.Y() * OOZ3;
 
             const float dooz13 = OOZ1 - OOZ3;
             const float dooz23 = OOZ2 - OOZ3;
@@ -48,6 +50,14 @@ class Gradients
 
             dVOZdX = oodX * ((dvoz23 * dy13) - (dvoz13 * dy23));
             dVOZdY = oodY * ((dvoz23 * dx13) - (dvoz13 * dx23));
+
+            //printf("gradients:\n");
+            //printf("  %f, %f, %f\n", OOZ1, OOZ2, OOZ3);
+            //printf("  %f, %f, %f\n", UOZ1, UOZ2, UOZ3);
+            //printf("  %f, %f, %f\n", VOZ1, VOZ2, VOZ3);
+            //printf("  %f, %f\n", dOOZdX, dOOZdY);
+            //printf("  %f, %f\n", dUOZdX, dUOZdY);
+            //printf("  %f, %f\n", dVOZdX, dVOZdY);
         }
 
         float OOZ1, OOZ2, OOZ3;
@@ -63,20 +73,26 @@ class Edge
     public:
         Edge(const Gradients& grads, const TriVert& v1, const TriVert& v2, float topOOZ, float topUOZ, float topVOZ)
         {
-            Y = ceil(v1.pos.y);
-            int yend = ceil(v2.pos.y);
+            //printf("Edge: (%f, %f), (%f, %f)\n", (float)v1.pos.X(), (float)v1.pos.Y(), (float)v2.pos.X(), (float)v2.pos.Y());
+            Y = ceil((float)v1.pos.Y());
+            //printf("  Y: %d\n", Y);
+            int yend = ceil((float)v2.pos.Y());
+            //printf("  yend: %d\n", yend);
             Height = yend - Y;
+            //printf("  height: %d\n", Height);
 
-            const float yprestep = Y - v1.pos.y;
-            const float realWidth = v2.pos.x - v1.pos.x;
-            const float realHeight = v2.pos.y - v1.pos.y;
-            //printf("realwidth/height: %f, %f\n", realWidth, realHeight);
+            const float yprestep = Y - (float)VecFloat(v1.pos.Y());
+            const float realWidth = v2.pos.X() - v1.pos.X();
+            const float realHeight = v2.pos.Y() - v1.pos.Y();
+            //printf("  realwidth/height: %f, %f\n", realWidth, realHeight);
 
-            X = (realWidth * yprestep) / realHeight + v1.pos.x;
+            X = (realWidth * yprestep) / realHeight + v1.pos.X();
             XStep = realWidth / realHeight;
-            //printf("x, xstep: %f, %f\n", X, XStep);
+            //printf("  x, xstep: %f, %f\n", X, XStep);
 
-            float xprestep = X - v1.pos.x;
+            const float xprestep = X - v1.pos.X();
+            //printf("xprestep: %f\n", xprestep);
+            //printf("yprestep: %f\n", yprestep);
 
             OOZ = topOOZ +
                 yprestep * grads.dOOZdY +
@@ -93,6 +109,9 @@ class Edge
                 yprestep * grads.dVOZdY +
                 xprestep * grads.dVOZdX;
             VOZStep = XStep * grads.dVOZdX + grads.dVOZdY;
+            //printf("ooz, oozstep: %f, %f\n", OOZ, OOZStep);
+            //printf("uoz, uozstep: %f, %f\n", UOZ, UOZStep);
+            //printf("voz, vozstep: %f, %f\n", VOZ, VOZStep);
         }
 
         void Step()
@@ -115,19 +134,15 @@ class Edge
 struct DisplayImplContext
 {
     DisplayImplContext()
-        : Execing(true)
-        , Printing(true)
+        : CurTexId(0)
     {
-        for (int i = 0; i < NUM_MATRIX_MODES; ++i)
+        for (int i = 0; i < MM_NumMatrixModes; ++i)
             CurMatrix[i] = &MatrixStack[i][0];
     }
 
-    bool Execing;
-    bool Printing;
-
     MatrixModeE MatrixMode;
-    Mat44 MatrixStack[NUM_MATRIX_MODES][MAX_MATRIX_STACK_DEPTH] __attribute__((aligned(16)));
-    Mat44* CurMatrix[NUM_MATRIX_MODES];
+    Mat44 MatrixStack[MM_NumMatrixModes][MaxMatrixStackDepth] __attribute__((aligned(16)));
+    Mat44* CurMatrix[MM_NumMatrixModes];
 
     float ClearDepth;
     GLuint ClearColor;
@@ -148,7 +163,6 @@ struct DisplayImplContext
     struct VertexState
     {
         Vec4 Color;
-        GLuint ColorInt;
         Vec4 Normal;
         Vec4 TexCoord;
     };
@@ -168,12 +182,13 @@ struct DisplayImplContext
     bool Texture2DEnabled;
     Texture* CurrentTexture;
     std::map<GLuint, Texture*> AllTextures;
+    int CurTexId;
 };
 
 inline void drawScanLine(const Gradients& grads, const Edge* left, const Edge* right)
 {
-    int xstart = ceil(left->X);
-    float xprestep = xstart - left->X;
+    const int xstart = ceil(left->X);
+    const float xprestep = xstart - left->X;
 
     GLuint* dest = ctx.Buf.C + left->Y * ctx.Buf.Stride + xstart;
     //GLuint* start = dest;
@@ -187,6 +202,8 @@ inline void drawScanLine(const Gradients& grads, const Edge* left, const Edge* r
     float uoz = left->UOZ + xprestep * grads.dUOZdX;
     float voz = left->VOZ + xprestep * grads.dVOZdX;
 
+    //printf("width: %d, xstart: %d, lX: %f, rX: %f\n", width, xstart, left->X, right->X);
+    //printf("ooz: %f, uoz: %f, voz: %f\n", ooz, uoz, voz);
     while (width-- > 0)
     {
         float z = 1 / ooz;
@@ -206,29 +223,19 @@ inline void drawScanLine(const Gradients& grads, const Edge* left, const Edge* r
 inline void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* V3)
 {
     // v1 top, v2 middle, v3 bottom
-    if (V1->pos.y > V3->pos.y) swap(V1, V3);
-    if (V2->pos.y > V3->pos.y) swap(V2, V3);
-    if (V1->pos.y > V2->pos.y) swap(V1, V2);
+    if (V1->pos.Y() > V3->pos.Y()) swap(V1, V3);
+    if (V2->pos.Y() > V3->pos.Y()) swap(V2, V3);
+    if (V1->pos.Y() > V2->pos.Y()) swap(V1, V2);
+    /*
+    printf("(%f, %f), (%f, %f), (%f, %f)\n",
+            (float)V1->pos.X(), (float)V1->pos.Y(),
+            (float)V2->pos.X(), (float)V2->pos.Y(),
+            (float)V3->pos.X(), (float)V3->pos.Y());
+    */
 
     TriVert v1 = *V1;
     TriVert v2 = *V2;
     TriVert v3 = *V3;
-/*    printf("input pos: (%f,%f) (%f,%f) (%f,%f)\n",
-            v1.pos.x, v1.pos.y,
-            v2.pos.x, v2.pos.y,
-            v3.pos.x, v3.pos.y);
-    printf("input tex: (%f,%f) (%f,%f) (%f,%f)\n",
-            v1.tex.x, v1.tex.y,
-            v2.tex.x, v2.tex.y,
-            v3.tex.x, v3.tex.y);
-            */
-
-    /*v1.pos.x -= 0.5f;
-    v2.pos.x -= 0.5f;
-    v3.pos.x -= 0.5f;
-    v1.pos.y -= 0.5f;
-    v2.pos.y -= 0.5f;
-    v3.pos.y -= 0.5f;*/
 
     Gradients grads(v1, v2, v3);
     Edge edge12(grads, v1, v2, grads.OOZ1, grads.UOZ1, grads.VOZ1);
@@ -236,7 +243,7 @@ inline void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
     Edge edge23(grads, v2, v3, grads.OOZ2, grads.UOZ2, grads.VOZ2);
 
     // figure out where v2.x is on long edge
-    const float xOnLong = (((v2.pos.y - v1.pos.y) * (v3.pos.x - v1.pos.x)) / (v3.pos.y - v1.pos.y)) + v1.pos.x;
+    const float xOnLong = (((v2.pos.Y() - v1.pos.Y()) * (v3.pos.X() - v1.pos.X())) / (v3.pos.Y() - v1.pos.Y())) + v1.pos.X();
     //printf("xOnLong: %f\n", xOnLong);
 
     //printf("scanning in %c %c %c\n", v1.debug, v2.debug, v3.debug);
@@ -244,7 +251,7 @@ inline void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
     const Edge* right1;
     const Edge* left2;
     const Edge* right2;
-    if (v2.pos.x > xOnLong)
+    if (v2.pos.X() > xOnLong)
     {
         left1 = left2 = &edge13;
         right1 = &edge12;
@@ -285,7 +292,6 @@ inline GLuint floatColorToUint(float r, float g, float b, float a)
     GLuint ai = (GLuint)(a * 255.f);
     return (bi << 24) | (gi << 16) | (ri << 8) | ai;
 }
-inline GLuint floatColorToUint(Vec4 v) { return floatColorToUint(v.x, v.y, v.z, v.w); }
 
 void pumpEvents()
 {

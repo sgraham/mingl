@@ -48,8 +48,7 @@ inline void MinGL::ClientActiveTexture(GLenum texture) { MINGL_ASSERT(0); }
 
 inline void MinGL::Color4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
-    ctx.Vert.Color.v = _mm_setr_ps(red, green, blue, alpha);
-    ctx.Vert.ColorInt = floatColorToUint(ctx.Vert.Color);
+    ctx.Vert.Color = Vec4(red, green, blue, alpha);
 }
 
 inline void MinGL::ColorMask(bool red, bool green, bool blue, bool alpha) { MINGL_ASSERT(0); }
@@ -69,10 +68,10 @@ inline void MinGL::DisableClientState(GLenum array)
 {
     switch(array)
     {
-        case GL_VERTEX_ARRAY: ctx.ClientState &= ~VERTEX_ARRAY; break;
-        case GL_NORMAL_ARRAY: ctx.ClientState &= ~NORMAL_ARRAY; break;
-        case GL_COLOR_ARRAY: ctx.ClientState &= ~COLOR_ARRAY; break;
-        case GL_TEXTURE_COORD_ARRAY: ctx.ClientState &= ~TEXCOORD_ARRAY; break;
+        case GL_VERTEX_ARRAY: ctx.ClientState &= ~CS_VertexArray; break;
+        case GL_NORMAL_ARRAY: ctx.ClientState &= ~CS_NormalArray; break;
+        case GL_COLOR_ARRAY: ctx.ClientState &= ~CS_ColorArray; break;
+        case GL_TEXTURE_COORD_ARRAY: ctx.ClientState &= ~CS_TexCoordArray; break;
         default: MINGL_ERR(GL_INVALID_ENUM);
     }
 }
@@ -89,21 +88,21 @@ inline void MinGL::DrawArrays(GLenum mode, GLint first, GLsizei count)
         GLint ti = first;
         while (vi < vlast)
         {
-            a.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi]); vi += vstep;
-            b.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi]); vi += vstep;
-            c.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi]); vi += vstep; // todo; this is going to load past end on last one.
+            a.pos = Vec4(&ctx.VertexArray.Data[vi]); vi += vstep;
+            b.pos = Vec4(&ctx.VertexArray.Data[vi]); vi += vstep;
+            c.pos = Vec4(&ctx.VertexArray.Data[vi]); vi += vstep; // todo; this is going to load past end on last one.
             if (ctx.Texture2DEnabled)
             {
-                a.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti]); ti += tstep;
-                b.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti]); ti += tstep;
-                c.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti]); ti += tstep; // todo; this is going to load past end on last one.
+                a.tex = Vec4(&ctx.TexCoordArray.Data[ti]); ti += tstep;
+                b.tex = Vec4(&ctx.TexCoordArray.Data[ti]); ti += tstep;
+                c.tex = Vec4(&ctx.TexCoordArray.Data[ti]); ti += tstep; // todo; this is going to load past end on last one.
             }
             // todo; this is silly
-            //if (ctx.VertexArray.Size == 2)
+            if (ctx.VertexArray.Size == 2)
             {
-                a.pos.z = -100.f;
-                b.pos.z = -100.f;
-                c.pos.z = -100.f;
+                a.pos.SetZ(-100.f);
+                b.pos.SetZ(-100.f);
+                c.pos.SetZ(-100.f);
             }
             a.debug = 'a';
             b.debug = 'b';
@@ -122,21 +121,21 @@ inline void MinGL::DrawArrays(GLenum mode, GLint first, GLsizei count)
         bool odd = true;
         while (vi < vlast)
         {
-            a.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi]); vi += vstep;
-            b.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi]);
-            c.pos.v = _mm_loadu_ps(&ctx.VertexArray.Data[vi + vstep]); // todo; this is going to load past end on last one.
+            a.pos = Vec4(&ctx.VertexArray.Data[vi]); vi += vstep;
+            b.pos = Vec4(&ctx.VertexArray.Data[vi]);
+            c.pos = Vec4(&ctx.VertexArray.Data[vi + vstep]); // todo; this is going to load past end on last one.
             if (ctx.Texture2DEnabled)
             {
-                a.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti]); ti += tstep;
-                b.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti]);
-                c.tex.v = _mm_loadu_ps(&ctx.TexCoordArray.Data[ti + tstep]); // todo; this is going to load past end on last one.
+                a.tex = Vec4(&ctx.TexCoordArray.Data[ti]); ti += tstep;
+                b.tex = Vec4(&ctx.TexCoordArray.Data[ti]);
+                c.tex = Vec4(&ctx.TexCoordArray.Data[ti + tstep]); // todo; this is going to load past end on last one.
             }
             // todo; this is silly
-            //if (ctx.VertexArray.Size == 2)
+            if (ctx.VertexArray.Size == 2)
             {
-                a.pos.z = -100.f;
-                b.pos.z = -100.f;
-                c.pos.z = -100.f;
+                a.pos.SetZ(-100.f);
+                b.pos.SetZ(-100.f);
+                c.pos.SetZ(-100.f);
             }
             if (odd)
                 renderTriangle(&a, &b, &c);
@@ -174,10 +173,10 @@ inline void MinGL::EnableClientState(GLenum array)
 {
     switch(array)
     {
-        case GL_VERTEX_ARRAY: ctx.ClientState |= VERTEX_ARRAY; break;
-        case GL_NORMAL_ARRAY: ctx.ClientState |= NORMAL_ARRAY; break;
-        case GL_COLOR_ARRAY: ctx.ClientState |= COLOR_ARRAY; break;
-        case GL_TEXTURE_COORD_ARRAY: ctx.ClientState |= TEXCOORD_ARRAY; break;
+        case GL_VERTEX_ARRAY: ctx.ClientState |= CS_VertexArray; break;
+        case GL_NORMAL_ARRAY: ctx.ClientState |= CS_NormalArray; break;
+        case GL_COLOR_ARRAY: ctx.ClientState |= CS_ColorArray; break;
+        case GL_TEXTURE_COORD_ARRAY: ctx.ClientState |= CS_TexCoordArray; break;
         default: MINGL_ERR(GL_INVALID_ENUM);
     }
 }
@@ -190,10 +189,8 @@ inline void MinGL::FrontFace(GLenum mode) { MINGL_ASSERT(0); }
 inline void MinGL::Frustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar) { MINGL_ASSERT(0); }
 inline void MinGL::GenTextures(GLsizei n, GLuint *textures)
 {
-    // todo; fugly
-    static GLuint counter = 1;
     for (GLsizei i = 0; i < n; ++i)
-        textures[i] = counter++;
+        textures[i] = ctx.CurTexId++;
 }
 
 inline GLenum MinGL::GetError()
@@ -226,19 +223,39 @@ inline void MinGL::LineWidth(GLfloat width) { MINGL_ASSERT(0); }
 
 inline void MinGL::LoadIdentity(void)
 {
-    Mat44& m = *ctx.CurMatrix[ctx.MatrixMode];
-    m.l1 = _mm_setr_ps(1.f, 0.f, 0.f, 0.f);
-    m.l2 = _mm_setr_ps(0.f, 1.f, 0.f, 0.f);
-    m.l3 = _mm_setr_ps(0.f, 0.f, 1.f, 0.f);
-    m.l4 = _mm_setr_ps(0.f, 0.f, 0.f, 1.f);
+    *ctx.CurMatrix[ctx.MatrixMode] = Mat44(
+            1.f, 0.f, 0.f, 0.f,
+            0.f, 1.f, 0.f, 0.f,
+            0.f, 0.f, 1.f, 0.f,
+            0.f, 0.f, 0.f, 1.f);
 }
 
-inline void MinGL::LoadMatrixf(const GLfloat *m) { MINGL_ASSERT(0); }
+inline void MinGL::LoadMatrixf(const GLfloat *m)
+{
+    *ctx.CurMatrix[ctx.MatrixMode] = Mat44(m);
+}
+
 inline void MinGL::LogicOp(GLenum opcode) { MINGL_ASSERT(0); }
 inline void MinGL::Materialf(GLenum face, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
 inline void MinGL::Materialfv(GLenum face, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
-inline void MinGL::MatrixMode(GLenum mode) { MINGL_ASSERT(0); }
-inline void MinGL::MultMatrixf(const GLfloat *m) { MINGL_ASSERT(0); }
+
+inline void MinGL::MatrixMode(GLenum mode)
+{
+    switch (mode)
+    {
+        case GL_MODELVIEW: ctx.MatrixMode = MM_ModelView; break;
+        case GL_PROJECTION: ctx.MatrixMode = MM_Projection; break;
+        case GL_TEXTURE: ctx.MatrixMode = MM_Texture; break;
+        default: MINGL_ERR(GL_INVALID_ENUM);
+    }
+}
+
+inline void MinGL::MultMatrixf(const GLfloat *m)
+{
+    Mat44 mm(m);
+    MINGL_ASSERT(false);
+}
+
 inline void MinGL::MultiTexCoord4f(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q) { MINGL_ASSERT(0); }
 inline void MinGL::Normal3f(GLfloat nx, GLfloat ny, GLfloat nz) { MINGL_ASSERT(0); }
 inline void MinGL::NormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer) { MINGL_ASSERT(0); }

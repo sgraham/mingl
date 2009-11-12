@@ -1,8 +1,8 @@
 #include <stdio.h>
-#if WANT_DEBUG_TEST
+#ifndef WANT_DIST_TEST
     #include "mingl_debug.h"
 #else
-    #include "mingl.h"
+    #include "dist/mingl.h"
 #endif
 
 using namespace mingl;
@@ -44,9 +44,14 @@ class Main : public MinGL, public EventListener
             BindTexture(GL_TEXTURE_2D, texid);
             TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, testtex_rgba);
 
-            //float delta = 1.f;
+            float delta = 1.f;
             while (IsOpen())
             {
+                MatrixMode(GL_PROJECTION);
+                LoadIdentity();
+                MatrixMode(GL_MODELVIEW);
+                LoadIdentity();
+                MatrixMode(GL_TEXTURE);
                 LoadIdentity();
                 ClearColor(0.f, 0.f, 0.f, 0.f);
                 Clear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -110,9 +115,9 @@ class Main : public MinGL, public EventListener
                         //verts[i] -= 0.5f;
                     }
 
-                    //offset += delta;
-                    //if (offset > 10) delta = -0.01f;
-                    //if (offset < -10) delta = .01f;
+                    mOffset += delta;
+                    if (mOffset > 10) delta = -1.f;
+                    if (mOffset < -10) delta = 1.f;
 
                     for (unsigned int j = 0; j < sizeof(verts)/sizeof(verts[0]); j += 2)
                     {
@@ -154,7 +159,6 @@ class Main : public MinGL, public EventListener
 int main()
 {
     Main* main = new Main();
-    printf("%p\n", main);
     main->Run();
     return 0;
 }

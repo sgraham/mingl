@@ -31,3 +31,41 @@ template <class T> void swap(T& a, T& b)
 #endif
 
 #include "mingl_impl_setup_unix.h"
+
+
+namespace mingl
+{
+
+enum MatrixModeE
+{
+    MM_ModelView = 0,
+    MM_Projection = 1,
+    MM_Texture = 2,
+    MM_NumMatrixModes,
+};
+
+enum ClientStateE
+{
+    CS_VertexArray = 0x001,
+    CS_ColorArray = 0x002,
+    CS_NormalArray = 0x004,
+    CS_TexCoordArray = 0x008,
+};
+
+enum { MaxMatrixStackDepth = 32 };
+
+struct Texture
+{
+    GLuint* C;
+    int Width;
+    int Height;
+    ~Texture()
+    {
+        delete[] C;
+    }
+};
+
+#include "mingl_impl_vec.h"
+#include "mingl_impl_mat.h"
+
+}

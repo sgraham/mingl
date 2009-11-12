@@ -3,6 +3,7 @@
 import sys
 import os
 import re
+import platform
 
 def cmd(cmd):
     print ". running: '%s'" % cmd
@@ -13,20 +14,25 @@ def cmd(cmd):
 
 def test(wantDebug=True):
     """build simple test exe and run it"""
-    cmd("g++ -msse -Wall -fstrict-aliasing -Wextra -Wno-unused-parameter -Werror -g %s test.cpp test2.cpp testtex.cpp -lX11 -o test"
-            % ("-DWANT_DEBUG_TEST" if wantDebug else ""))
-    cmd("./test")
+    plat = platform.uname()[0]
+    if plat == "Linux":
+        cmd("g++ -msse -Wall -fstrict-aliasing -Wextra -Wno-unused-parameter -Werror %s test.cpp test2.cpp testtex.cpp -lX11 -o test"
+                % ("-g -DWANT_DEBUG_TEST" if wantDebug else "-O3"))
+        cmd("./test")
+    else:
+        print "don't know how to build and run"
 
 def tex():
     """convert our silly test png into a cpp file for ease of referencing"""
     cmd("convert testtex.png testtex.rgba")
     cmd("xxd -i testtex.rgba testtex.cpp")
-    cmd("rm testtex.rgba")
+    os.unlink("testtex.rgba")
 
 def dist():
     """build separate source files into one combined header for easy distribution"""
+    if not os.path.exists("dist"): os.mkdir("dist")
     print ". building combined mingl.h"
-    out = open("mingl.h", "w")
+    out = open("dist/mingl.h", "w")
     def process(fn):
         for line in open(fn).readlines():
             if line.startswith("//STRIP"): continue

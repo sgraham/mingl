@@ -55,7 +55,7 @@ class Main : public MinGL, public EventListener
                 LoadIdentity();
                 ClearColor(0.f, 0.f, 0.f, 0.f);
                 Clear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-                Color4f(1.f, 0.f, 0.f, 1.f);
+                Color4(1.f, 0.f, 0.f, 1.f);
 
                 if (0)
                 {

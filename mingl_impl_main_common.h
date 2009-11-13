@@ -44,7 +44,7 @@ inline void MinGL::ClearColor(GLclampf red, GLclampf green, GLclampf blue, GLcla
     ctx.ClearColor = floatColorToUint(red, green, blue, alpha);
 }
 
-inline void MinGL::ClearDepthf(GLclampf depth) { MINGL_ASSERT(0); }
+inline void MinGL::ClearDepth(GLclampf depth) { MINGL_ASSERT(0); }
 inline void MinGL::ClearStencil(GLint s) { MINGL_ASSERT(0); }
 inline void MinGL::ClientActiveTexture(GLenum texture)
 {
@@ -52,7 +52,7 @@ inline void MinGL::ClientActiveTexture(GLenum texture)
     ctx.CurActiveTexture = texture;
 }
 
-inline void MinGL::Color4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
+inline void MinGL::Color4(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
     ctx.Vert.Color = Vec4(red, green, blue, alpha);
 }
@@ -67,7 +67,7 @@ inline void MinGL::CullFace(GLenum mode) { MINGL_ASSERT(0); }
 inline void MinGL::DeleteTextures(GLsizei n, const GLuint *textures) { MINGL_ASSERT(0); }
 inline void MinGL::DepthFunc(GLenum func) { MINGL_ASSERT(0); }
 inline void MinGL::DepthMask(bool flag) { MINGL_ASSERT(0); }
-inline void MinGL::DepthRangef(GLclampf zNear, GLclampf zFar) { MINGL_ASSERT(0); }
+inline void MinGL::DepthRange(GLclampf zNear, GLclampf zFar) { MINGL_ASSERT(0); }
 inline void MinGL::Disable(GLenum cap) { MINGL_ASSERT(0); }
 
 inline void MinGL::DisableClientState(GLenum array)
@@ -188,12 +188,12 @@ inline void MinGL::EnableClientState(GLenum array)
     }
 }
 
-inline void MinGL::Finish(void) { MINGL_ASSERT(0); }
-inline void MinGL::Flush(void) { MINGL_ASSERT(0); }
-inline void MinGL::Fogf(GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
-inline void MinGL::Fogfv(GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+inline void MinGL::Finish() { MINGL_ASSERT(0); }
+inline void MinGL::Flush() { MINGL_ASSERT(0); }
+inline void MinGL::Fog(GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+inline void MinGL::Fog(GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
 inline void MinGL::FrontFace(GLenum mode) { MINGL_ASSERT(0); }
-inline void MinGL::Frustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar) { MINGL_ASSERT(0); }
+inline void MinGL::Frustum(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar) { MINGL_ASSERT(0); }
 inline void MinGL::GenTextures(GLsizei n, GLuint *textures)
 {
     for (GLsizei i = 0; i < n; ++i)
@@ -222,13 +222,13 @@ inline const GLubyte* MinGL::GetString(GLenum name)
 }
 
 inline void MinGL::Hint(GLenum target, GLenum mode) { MINGL_ASSERT(0); }
-inline void MinGL::LightModelf(GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
-inline void MinGL::LightModelfv(GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
-inline void MinGL::Lightf(GLenum light, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
-inline void MinGL::Lightfv(GLenum light, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+inline void MinGL::LightModel(GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+inline void MinGL::LightModel(GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+inline void MinGL::Light(GLenum light, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+inline void MinGL::Light(GLenum light, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
 inline void MinGL::LineWidth(GLfloat width) { MINGL_ASSERT(0); }
 
-inline void MinGL::LoadIdentity(void)
+inline void MinGL::LoadIdentity()
 {
     *ctx.CurMatrix[ctx.MatrixMode] = Mat44(
             1.f, 0.f, 0.f, 0.f,
@@ -237,14 +237,14 @@ inline void MinGL::LoadIdentity(void)
             0.f, 0.f, 0.f, 1.f);
 }
 
-inline void MinGL::LoadMatrixf(const GLfloat *m)
+inline void MinGL::LoadMatrix(const GLfloat *m)
 {
     *ctx.CurMatrix[ctx.MatrixMode] = Mat44(m);
 }
 
 inline void MinGL::LogicOp(GLenum opcode) { MINGL_ASSERT(0); }
-inline void MinGL::Materialf(GLenum face, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
-inline void MinGL::Materialfv(GLenum face, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+inline void MinGL::Material(GLenum face, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+inline void MinGL::Material(GLenum face, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
 
 inline void MinGL::MatrixMode(GLenum mode)
 {
@@ -257,24 +257,24 @@ inline void MinGL::MatrixMode(GLenum mode)
     }
 }
 
-inline void MinGL::MultMatrixf(const GLfloat *m)
+inline void MinGL::MultMatrix(const GLfloat *m)
 {
     Mat44 mm(m);
     MINGL_ASSERT(false);
 }
 
-inline void MinGL::MultiTexCoord4f(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q) { MINGL_ASSERT(0); }
-inline void MinGL::Normal3f(GLfloat nx, GLfloat ny, GLfloat nz) { MINGL_ASSERT(0); }
+inline void MinGL::MultiTexCoord4(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q) { MINGL_ASSERT(0); }
+inline void MinGL::Normal3(GLfloat nx, GLfloat ny, GLfloat nz) { MINGL_ASSERT(0); }
 inline void MinGL::NormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer) { MINGL_ASSERT(0); }
-inline void MinGL::Orthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar) { MINGL_ASSERT(0); }
+inline void MinGL::Ortho(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar) { MINGL_ASSERT(0); }
 inline void MinGL::PixelStorei(GLenum pname, GLint param) { MINGL_ASSERT(0); }
 inline void MinGL::PointSize(GLfloat size) { MINGL_ASSERT(0); }
 inline void MinGL::PolygonOffset(GLfloat factor, GLfloat units) { MINGL_ASSERT(0); }
-inline void MinGL::PopMatrix(void) { MINGL_ASSERT(0); }
-inline void MinGL::PushMatrix(void) { MINGL_ASSERT(0); }
+inline void MinGL::PopMatrix() { MINGL_ASSERT(0); }
+inline void MinGL::PushMatrix() { MINGL_ASSERT(0); }
 inline void MinGL::ReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels) { MINGL_ASSERT(0); }
-inline void MinGL::Rotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
-inline void MinGL::Scalef(GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
+inline void MinGL::Rotate(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
+inline void MinGL::Scale(GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
 inline void MinGL::Scissor(GLint x, GLint y, GLsizei width, GLsizei height) { MINGL_ASSERT(0); }
 inline void MinGL::ShadeModel(GLenum mode) { MINGL_ASSERT(0); }
 inline void MinGL::StencilFunc(GLenum func, GLint ref, GLuint mask) { MINGL_ASSERT(0); }
@@ -291,8 +291,8 @@ inline void MinGL::TexCoordPointer(GLint size, GLenum type, GLsizei stride, cons
     if (stride < 0) MINGL_ERR(GL_INVALID_VALUE);
 }
 
-inline void MinGL::TexEnvf(GLenum target, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
-inline void MinGL::TexEnvfv(GLenum target, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+inline void MinGL::TexEnv(GLenum target, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+inline void MinGL::TexEnv(GLenum target, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
 inline void MinGL::TexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels)
 {
     if (target != GL_TEXTURE_2D) MINGL_ERR(GL_INVALID_ENUM);
@@ -321,9 +321,9 @@ inline void MinGL::TexImage2D(GLenum target, GLint level, GLint internalformat, 
     ctx.CurrentTexture->Height = height;
 }
 
-inline void MinGL::TexParameterf(GLenum target, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+inline void MinGL::TexParameter(GLenum target, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
 inline void MinGL::TexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) { MINGL_ASSERT(0); }
-inline void MinGL::Translatef(GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
+inline void MinGL::Translate(GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
 
 inline void MinGL::VertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {

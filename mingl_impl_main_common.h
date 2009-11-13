@@ -237,7 +237,7 @@ inline void MinGL::Frustum(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n
             || n ==f)
         MINGL_ERR(GL_INVALID_VALUE);
 
-    *ctx.CurMatrix[ctx.MatrixMode] = Mat44(
+    *ctx.CurMatrix[ctx.MatrixMode] *= Mat44(
             (2*n)/(r-l), 0.f, (r+l)/(r-l), 0.f,
             0.f, (2*n)/(t-b), (t+b)/(t-b), 0.f,
             0.f, 0.f, -((f+n)/(f-n)), -((2*f*n)/(f-n)),
@@ -345,7 +345,7 @@ inline void MinGL::Ortho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, 
             || n ==f)
         MINGL_ERR(GL_INVALID_VALUE);
 
-    *ctx.CurMatrix[ctx.MatrixMode] = Mat44(
+    *ctx.CurMatrix[ctx.MatrixMode] *= Mat44(
             2.f/(r-l), 0.f, 0.f, -((r+l)/(r-l)),
             0.f, 2.f/(t-b), 0.f, -((t+b)/(t-b)),
             0.f, 0.f, -(2.f/(f-n)), -((f+n)/(f-n)),
@@ -368,7 +368,20 @@ inline void MinGL::ReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, G
 // --------------------------------------------------------------------------
 inline void MinGL::Rotate(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
-    MINGL_ASSERT(0);
+    const float theta = angle * M_PI / 180.f;
+    const float len2 = x*x + y*y + z*z;
+    const float len = 1.f / sqrt(len2);
+    x *= len; y *= len; z *= len;
+
+    const float c = cos(theta);
+    const float s = sin(theta);
+
+    Mat44 tmp(
+            x*x*(1-c)+c,   x*y*(1-c)-z*s, x*z*(1-c)+y*s, 0.f,
+            x*y*(1-c)+z*s, y*y*(1-c)+c,   y*z*(1-c)*x*s, 0.f,
+            x*z*(1-c)-y*s, y*z(1-c)+x*s,  z*z*(1-c)+c,   0.f,
+            0.f,           0.f,           0.f,           1.f);
+    *ctx.CurMatrix[ctx.MatrixMode] *= tmp;
 }
 
 // --------------------------------------------------------------------------

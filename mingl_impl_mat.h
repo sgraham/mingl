@@ -37,9 +37,9 @@ inline Vec4 operator*(Mat44::Arg m, Vec4::Arg v)
     NativeVectorType x, y, z, w, ret;
 
     MINGL_VECTOR_SPLAT_I(x, v.v, 0);
-    MINGL_VECTOR_SPLAT_I(x, v.v, 1);
-    MINGL_VECTOR_SPLAT_I(x, v.v, 2);
-    MINGL_VECTOR_SPLAT_I(x, v.v, 3);
+    MINGL_VECTOR_SPLAT_I(y, v.v, 1);
+    MINGL_VECTOR_SPLAT_I(z, v.v, 2);
+    MINGL_VECTOR_SPLAT_I(w, v.v, 3);
 
     MINGL_VECTOR_MULT(ret, m.c1.v, x);
     MINGL_VECTOR_MADD(ret, m.c2.v, y, ret);

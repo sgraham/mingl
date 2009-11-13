@@ -696,7 +696,7 @@ class MinGL
         void ClearDepth(GLclampf depth);
         void ClearStencil(GLint s);
         void ClientActiveTexture(GLenum texture);
-        void Color4(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+        void Color(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
         void ColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
         void ColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
         void CompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid *data);
@@ -737,11 +737,11 @@ class MinGL
         void Material(GLenum face, GLenum pname, const GLfloat *params);
         void MatrixMode(GLenum mode);
         void MultMatrix(const GLfloat *m);
-        void MultiTexCoord4(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q);
-        void Normal3(GLfloat nx, GLfloat ny, GLfloat nz);
+        void MultiTexCoord(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q);
+        void Normal(GLfloat nx, GLfloat ny, GLfloat nz);
         void NormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer);
         void Ortho(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar);
-        void PixelStorei(GLenum pname, GLint param);
+        void PixelStore(GLenum pname, GLint param);
         void PointSize(GLfloat size);
         void PolygonOffset(GLfloat factor, GLfloat units);
         void PopMatrix();
@@ -790,30 +790,30 @@ class MinGL
 // Portions of mingl are based on the PixelToaster Framebuffer Library by
 // Glenn Fielder. Its original license follows:
 /*
- 	PixelToaster Framebuffer Library.
+    PixelToaster Framebuffer Library.
 
-	Copyright © 2004-2007 Glenn Fiedler
+    Copyright © 2004-2007 Glenn Fiedler
 
-	This software is provided 'as-is', without any express or implied
-	warranty. In no event will the authors be held liable for any damages
-	arising from the use of this software.
+    This software is provided 'as-is', without any express or implied
+    warranty. In no event will the authors be held liable for any damages
+    arising from the use of this software.
 
-	Permission is granted to anyone to use this software for any purpose,
-	including commercial applications, and to alter it and redistribute it
-	freely, subject to the following restrictions:
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
 
-	1. The origin of this software must not be misrepresented; you must not
-	   claim that you wrote the original software. If you use this software
-	   in a product, an acknowledgment in the product documentation would be
-	   appreciated but is not required.
-	
-	2. Altered source versions must be plainly marked as such, and must not be
-	   misrepresented as being the original software.
-	
-	3. This notice may not be removed or altered from any source distribution.
+    1. The origin of this software must not be misrepresented; you must not
+       claim that you wrote the original software. If you use this software
+       in a product, an acknowledgment in the product documentation would be
+       appreciated but is not required.
 
-	Glenn Fiedler
-	gaffer@gaffer.org
+    2. Altered source versions must be plainly marked as such, and must not be
+       misrepresented as being the original software.
+
+    3. This notice may not be removed or altered from any source distribution.
+
+    Glenn Fiedler
+    gaffer@gaffer.org
 */
 // -----------------------------------------------------------------------
 

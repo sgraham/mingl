@@ -12,15 +12,21 @@ def cmd(cmd):
         print "FAILED"
         raise SystemExit()
 
-def test(wantDebug=True):
-    """build simple test exe and run it"""
+def buildAndRun(srcs, wantDebug=True):
+    """build and run simple tests. srcs shouldn't have extension. -o is to first srcs"""
     plat = platform.uname()[0]
     if plat == "Linux":
-        cmd("g++ -msse -Wall -fstrict-aliasing -Wextra -Wno-unused-parameter -Werror -g %s test.cpp test2.cpp testtex.cpp -lX11 -o test"
-                % ("" if wantDebug else "-O3 -DWANT_DIST_TEST"))
-        cmd("./test")
+        cmd("g++ -msse -Wall -fstrict-aliasing -Wextra -Wno-unused-parameter -Werror -g %s %s -lX11 -o %s"
+                % ("" if wantDebug else "-O3 -DWANT_DIST_TEST",
+                   ' '.join([x+".cpp" for x in srcs]),
+                   srcs[0]))
+        cmd("./" + srcs[0])
     else:
         print "don't know how to build and run"
+
+def test(wantDebug=True):
+    """build simple test exe and run it"""
+    buildAndRun(["test", "test2", "testtex"])
 
 def tex():
     """convert our silly test png into a cpp file for ease of referencing"""
@@ -34,17 +40,24 @@ def dist():
     print ". building combined mingl.h"
     out = open("dist/mingl.h", "w")
     def process(fn):
+        print >>out, '#line 1 "%s"' % fn
+        curline = 1
         for line in open(fn).readlines():
             if line.startswith("//STRIP"): continue
             mo = re.search('#include "(.*)"', line)
             if mo and mo.group(1) != "mingl.h": # avoid example code include
                 process(mo.group(1))
+                print >>out, '#line %d "%s"' % (curline, fn)
             else:
                 print >>out, line,
                 #print >>out, "/* mingl.h, edit original instead */", line,
+            curline += 1
     process("mingl_debug.h")
     out.close()
-    test(wantDebug=False)
+
+def ex(num):
+    dist()
+    buildAndRun(["examples/ex%02d" % int(num)])
 
 def main():
     if len(sys.argv) < 2:
@@ -57,6 +70,8 @@ def main():
         tex()
     elif arg == "dist":
         dist()
+    elif arg == "ex":
+        ex(sys.argv[2])
     else:
         print "usage: m {test|tex|dist}"
 

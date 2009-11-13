@@ -1,15 +1,112 @@
-struct TriVert
+struct ProcVert
 {
     Vec4 pos;
-    Vec4 tex;
-    Vec4 clr;
-    unsigned char debug;
+    Vec4 normal;
+    Vec4 color;
+    Vec4 tex[TU_NumTextureUnits];
+};
+
+typedef void (MinGL::*VertProcFn)();
+typedef void (MinGL::*TriRenderFn)(const ProcVert*, const ProcVert*, const ProcVert*);
+
+struct DisplayImplContext
+{
+    DisplayImplContext()
+    {
+        for (int i = 0; i < MM_NumMatrixModes; ++i)
+            CurMatrix[i] = &MatrixStack[i][0];
+        ClearColor = 0;
+        ClearDepth = 1.f;
+        ClearStencil = 0;
+        Error = 0;
+        GenTexIdCounter = 1;
+        Vert.color = Vec4(1.f, 1.f, 1.f, 1.f);
+        Vert.normal = Vec4(0.f, 0.f, 1.f, 0.f);
+        for (int i = 0; i < TU_NumTextureUnits; ++i)
+            Vert.tex[i] = Vec4(0.f, 0.f, 0.f, 1.f);
+        CurActiveTexture = 0;
+        CurClientActiveTexture = 0;
+        Texture2DEnabled = false;
+        VertexArray.Enabled = false;
+        ColorArray.Enabled = false;
+        NormalArray.Enabled = false;
+        for (int i = 0; i < TU_NumTextureUnits; ++i)
+            TexCoordArray[i].Enabled = false;
+
+        Funcs.Tri = &MinGL::renderTriangleTex;
+    }
+
+    MatrixModeE MatrixMode;
+    Mat44 MatrixStack[MM_NumMatrixModes][MaxMatrixStackDepth];
+    Mat44* CurMatrix[MM_NumMatrixModes];
+
+    GLuint ClearColor;
+    float ClearDepth;
+    GLuint ClearStencil;
+
+    GLenum Error;
+
+    // buffer, filled out by Display
+    struct Buffer
+    {
+        float* Z;
+        GLuint* C;
+        int Width;
+        int Height;
+        int Stride;
+    };
+    Buffer Buf;
+
+    struct ArrayState
+    {
+        const float* Data;
+        int Size;
+        int Stride;
+        bool Enabled;
+    };
+    ArrayState VertexArray;
+    ArrayState ColorArray;
+    ArrayState NormalArray;
+    ArrayState TexCoordArray[TU_NumTextureUnits];
+    int CurActiveTexture;
+    int CurClientActiveTexture;
+
+    ProcVert Vert;
+
+    struct RenderFunctions
+    {
+        TriRenderFn Tri;
+    };
+    RenderFunctions Funcs;
+
+    struct TrianglePrimitiveGenerateState
+    {
+        ProcVert A;
+        ProcVert B;
+        ProcVert* Next;
+        bool DidFirst;
+    };
+    TrianglePrimitiveGenerateState TriPrimGenState;
+
+    bool Texture2DEnabled;
+    Texture* CurrentTexture;
+    std::map<GLuint, Texture*> AllTextures;
+    int GenTexIdCounter;
+
+    CompareFuncE AlphaCompareFunc;
+    float AlphaCompareValue;
+
+    CompareFuncE DepthCompareFunc;
+
+    CompareFuncE StencilCompareFunc;
+    GLint StencilCompareValue;
+    GLuint StencilCompareMask;
 };
 
 class Gradients
 {
     public:
-        Gradients(const TriVert& v1, const TriVert& v2, const TriVert& v3)
+        Gradients(const ProcVert& v1, const ProcVert& v2, const ProcVert& v3)
         {
             const float dx23 = v2.pos.X() - v3.pos.X();
             const float dy13 = v1.pos.Y() - v3.pos.Y();
@@ -23,29 +120,41 @@ class Gradients
             OOZ1 = 1.f / v1.pos.Z();
             OOZ2 = 1.f / v2.pos.Z();
             OOZ3 = 1.f / v3.pos.Z();
-            //printf("OOZ:  %f, %f, %f\n", OOZ1, OOZ2, OOZ3);
-            UOZ1 = v1.tex.X() * OOZ1;
-            UOZ2 = v2.tex.X() * OOZ2;
-            UOZ3 = v3.tex.X() * OOZ3;
-            VOZ1 = v1.tex.Y() * OOZ1;
-            VOZ2 = v2.tex.Y() * OOZ2;
-            VOZ3 = v3.tex.Y() * OOZ3;
 
-            const float dooz13 = OOZ1 - OOZ3;
-            const float dooz23 = OOZ2 - OOZ3;
-            const float duoz13 = UOZ1 - UOZ3;
-            const float duoz23 = UOZ2 - UOZ3;
-            const float dvoz13 = VOZ1 - VOZ3;
-            const float dvoz23 = VOZ2 - VOZ3;
+            #define MINGL_CALC_COZ(coz_name, c_name)                        \
+                coz_name##1 = v1 . c_name * OOZ1;                           \
+                coz_name##2 = v2 . c_name * OOZ2;                           \
+                coz_name##3 = v3 . c_name * OOZ3;                           \
+                const float d##coz_name##13 = coz_name##1 - coz_name##3;    \
+                const float d##coz_name##23 = coz_name##2 - coz_name##3;
 
-            dOOZdX = oodX * ((dooz23 * dy13) - (dooz13 * dy23));
-            dOOZdY = oodY * ((dooz23 * dx13) - (dooz13 * dx23));
+                MINGL_CALC_COZ(U0OZ, tex[0].X())
+                MINGL_CALC_COZ(V0OZ, tex[0].Y())
+                MINGL_CALC_COZ(U1OZ, tex[1].X())
+                MINGL_CALC_COZ(V1OZ, tex[1].Y())
+                MINGL_CALC_COZ(ROZ, color.X())
+                MINGL_CALC_COZ(GOZ, color.Y())
+                MINGL_CALC_COZ(BOZ, color.Z())
+                MINGL_CALC_COZ(AOZ, color.W())
+            #undef MINGL_CALC_COZ
 
-            dUOZdX = oodX * ((duoz23 * dy13) - (duoz13 * dy23));
-            dUOZdY = oodY * ((duoz23 * dx13) - (duoz13 * dx23));
+            const float dOOZ13 = OOZ1 - OOZ3;
+            const float dOOZ23 = OOZ2 - OOZ3;
 
-            dVOZdX = oodX * ((dvoz23 * dy13) - (dvoz13 * dy23));
-            dVOZdY = oodY * ((dvoz23 * dx13) - (dvoz13 * dx23));
+            #define MINGL_CALC_DCOZ_BY_DXY(coz_name)                                                \
+                d##coz_name##dX = oodX * ((d##coz_name##23 * dy13) - (d##coz_name##13 * dy23));     \
+                d##coz_name##dY = oodY * ((d##coz_name##23 * dx13) - (d##coz_name##13 * dx23));     \
+
+                MINGL_CALC_DCOZ_BY_DXY(OOZ);
+                MINGL_CALC_DCOZ_BY_DXY(U0OZ);
+                MINGL_CALC_DCOZ_BY_DXY(V0OZ);
+                MINGL_CALC_DCOZ_BY_DXY(U1OZ);
+                MINGL_CALC_DCOZ_BY_DXY(V1OZ);
+                MINGL_CALC_DCOZ_BY_DXY(ROZ);
+                MINGL_CALC_DCOZ_BY_DXY(GOZ);
+                MINGL_CALC_DCOZ_BY_DXY(BOZ);
+                MINGL_CALC_DCOZ_BY_DXY(AOZ);
+            #undef MINGL_CALC_DCOZ_BY_DXY
 
             //printf("gradients:\n");
             //printf("  %f, %f, %f\n", OOZ1, OOZ2, OOZ3);
@@ -56,18 +165,28 @@ class Gradients
             //printf("  %f, %f\n", dVOZdX, dVOZdY);
         }
 
-        float OOZ1, OOZ2, OOZ3;
-        float UOZ1, UOZ2, UOZ3;
-        float VOZ1, VOZ2, VOZ3;
-        float dOOZdX, dOOZdY;
-        float dUOZdX, dUOZdY;
-        float dVOZdX, dVOZdY;
+        #define MINGL_DECLARE_COZ(coz_name)                 \
+            float coz_name##1, coz_name##2, coz_name##3;    \
+            float d##coz_name##dX, d##coz_name##dY;
+
+            MINGL_DECLARE_COZ(OOZ); // not really a C-over-Z, but same fields required
+
+            MINGL_DECLARE_COZ(U0OZ);
+            MINGL_DECLARE_COZ(V0OZ);
+            MINGL_DECLARE_COZ(U1OZ);
+            MINGL_DECLARE_COZ(V1OZ);
+
+            MINGL_DECLARE_COZ(ROZ);
+            MINGL_DECLARE_COZ(GOZ);
+            MINGL_DECLARE_COZ(BOZ);
+            MINGL_DECLARE_COZ(AOZ);
+        #undef MINGL_DECLARE_COZ
 };
 
 class Edge
 {
     public:
-        Edge(const Gradients& grads, const TriVert& v1, const TriVert& v2, float topOOZ, float topUOZ, float topVOZ)
+        Edge(const Gradients& grads, const ProcVert& v1, const ProcVert& v2, bool topIsV1)
         {
             //printf("Edge: (%f, %f), (%f, %f)\n", (float)v1.pos.X(), (float)v1.pos.Y(), (float)v2.pos.X(), (float)v2.pos.Y());
             Y = ceil((float)v1.pos.Y());
@@ -90,24 +209,21 @@ class Edge
             //printf("xprestep: %f\n", xprestep);
             //printf("yprestep: %f\n", yprestep);
 
-            OOZ = topOOZ +
-                yprestep * grads.dOOZdY +
-                xprestep * grads.dOOZdX;
-            OOZStep = XStep * grads.dOOZdX +
-                grads.dOOZdY;
+            #define MINGL_CALC_COZ(coz_name)                                                                            \
+                float top##coz_name = topIsV1 ? grads.coz_name##1 : grads.coz_name##2;                                  \
+                coz_name = top##coz_name + (yprestep * grads.d##coz_name##dY) + (xprestep * grads.d##coz_name##dX);     \
+                coz_name##Step = XStep * grads.d##coz_name##dX + grads.d##coz_name##dY;
 
-            UOZ = topUOZ +
-                yprestep * grads.dUOZdY +
-                xprestep * grads.dUOZdX;
-            UOZStep = XStep * grads.dUOZdX + grads.dUOZdY;
-
-            VOZ = topVOZ +
-                yprestep * grads.dVOZdY +
-                xprestep * grads.dVOZdX;
-            VOZStep = XStep * grads.dVOZdX + grads.dVOZdY;
-            //printf("ooz, oozstep: %f, %f\n", OOZ, OOZStep);
-            //printf("uoz, uozstep: %f, %f\n", UOZ, UOZStep);
-            //printf("voz, vozstep: %f, %f\n", VOZ, VOZStep);
+                MINGL_CALC_COZ(OOZ);
+                MINGL_CALC_COZ(U0OZ);
+                MINGL_CALC_COZ(V0OZ);
+                MINGL_CALC_COZ(U1OZ);
+                MINGL_CALC_COZ(V1OZ);
+                MINGL_CALC_COZ(ROZ);
+                MINGL_CALC_COZ(GOZ);
+                MINGL_CALC_COZ(BOZ);
+                MINGL_CALC_COZ(AOZ);
+            #undef MINGL_CALC_COZ
         }
 
         void Step()
@@ -115,100 +231,36 @@ class Edge
             X += XStep;
             Y += 1;
             Height -= 1;
-            OOZ += OOZStep;
-            UOZ += UOZStep;
-            VOZ += VOZStep;
+            #define MINGL_STEP_COZ(coz_name) coz_name += coz_name##Step;
+                MINGL_STEP_COZ(OOZ);
+                MINGL_STEP_COZ(U0OZ);
+                MINGL_STEP_COZ(V0OZ);
+                MINGL_STEP_COZ(U1OZ);
+                MINGL_STEP_COZ(V1OZ);
+                MINGL_STEP_COZ(ROZ);
+                MINGL_STEP_COZ(GOZ);
+                MINGL_STEP_COZ(BOZ);
+                MINGL_STEP_COZ(AOZ);
+            #undef MINGL_STEP_COZ
         }
 
         float X, XStep;
         int Y, Height;
-        float OOZ, OOZStep;
-        float UOZ, UOZStep;
-        float VOZ, VOZStep;
+
+        #define MINGL_DECLARE_COZ(coz_name) float coz_name, coz_name##Step;
+            MINGL_DECLARE_COZ(OOZ);
+            MINGL_DECLARE_COZ(U0OZ);
+            MINGL_DECLARE_COZ(V0OZ);
+            MINGL_DECLARE_COZ(U1OZ);
+            MINGL_DECLARE_COZ(V1OZ);
+            MINGL_DECLARE_COZ(ROZ);
+            MINGL_DECLARE_COZ(GOZ);
+            MINGL_DECLARE_COZ(BOZ);
+            MINGL_DECLARE_COZ(AOZ);
+        #undef MINGL_DECLARE_COZ
 };
 
-struct DisplayImplContext
-{
-    DisplayImplContext()
-    {
-        for (int i = 0; i < MM_NumMatrixModes; ++i)
-            CurMatrix[i] = &MatrixStack[i][0];
-        ClearColor = 0;
-        ClearDepth = 1.f;
-        ClearStencil = 0;
-        Error = 0;
-        CurTexId = 1;
-        CurColor = Vec4(1.f, 1.f, 1.f, 1.f);
-        CurNormal = Vec4(0.f, 0.f, 1.f, 0.f);
-        for (int i = 0; i < TU_NumTextureUnits; ++i)
-            CurTexCoords[i] = Vec4(0.f, 0.f, 0.f, 1.f);
-        CurActiveTexture = 0;
-        CurClientActiveTexture = 0;
-        Texture2DEnabled = false;
-    }
-
-    MatrixModeE MatrixMode;
-    Mat44 MatrixStack[MM_NumMatrixModes][MaxMatrixStackDepth] __attribute__((aligned(16)));
-    Mat44* CurMatrix[MM_NumMatrixModes];
-
-    GLuint ClearColor;
-    float ClearDepth;
-    GLuint ClearStencil;
-
-    GLenum Error;
-
-    // buffer, filled out by Display
-    struct Buffer
-    {
-        float* Z;
-        GLuint* C;
-        int Width;
-        int Height;
-        int Stride;
-    };
-    Buffer Buf;
-
-    struct VertexState
-    {
-        Vec4 Color;
-        Vec4 Normal;
-        Vec4 TexCoord;
-    };
-    VertexState Vert;
-
-    int ClientState;
-    struct ArrayState
-    {
-        const float* Data;
-        int Size;
-        int Stride;
-    };
-    ArrayState VertexArray;
-    ArrayState ColorArray;
-    ArrayState TexCoordArray[TU_NumTextureUnits];
-    int CurActiveTexture;
-    int CurClientActiveTexture;
-
-    bool Texture2DEnabled;
-    Texture* CurrentTexture;
-    std::map<GLuint, Texture*> AllTextures;
-    int CurTexId;
-
-    Vec4 CurColor;
-    Vec4 CurNormal;
-    Vec4 CurTexCoords[TU_NumTextureUnits];
-
-    CompareFuncE AlphaCompareFunc;
-    float AlphaCompareValue;
-
-    CompareFuncE DepthCompareFunc;
-
-    CompareFuncE StencilCompareFunc;
-    GLint StencilCompareValue;
-    GLuint StencilCompareMask;
-};
-
-inline void drawScanLine(const Gradients& grads, const Edge* left, const Edge* right)
+inline void drawScanLineTex(const Gradients& grads, const Edge* left, const Edge* right)
 {
     const int xstart = ceil(left->X);
     const float xprestep = xstart - left->X;
@@ -222,8 +274,8 @@ inline void drawScanLine(const Gradients& grads, const Edge* left, const Edge* r
     int width = ceil(right->X) - xstart;
 
     float ooz = left->OOZ + xprestep * grads.dOOZdX;
-    float uoz = left->UOZ + xprestep * grads.dUOZdX;
-    float voz = left->VOZ + xprestep * grads.dVOZdX;
+    float uoz = left->U0OZ + xprestep * grads.dU0OZdX;
+    float voz = left->V0OZ + xprestep * grads.dV0OZdX;
 
     //printf("width: %d, xstart: %d, lX: %f, rX: %f\n", width, xstart, left->X, right->X);
     //printf("ooz: %f, uoz: %f, voz: %f\n", ooz, uoz, voz);
@@ -238,32 +290,31 @@ inline void drawScanLine(const Gradients& grads, const Edge* left, const Edge* r
         *dest++ += *(texdata + u + (v * texStride));
 
         ooz += grads.dOOZdX;
-        uoz += grads.dUOZdX;
-        voz += grads.dVOZdX;
+        uoz += grads.dU0OZdX;
+        voz += grads.dV0OZdX;
     }
 }
 
-inline void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* V3)
+inline void renderTriangleTex(const ProcVert* V1, const ProcVert* V2, const ProcVert* V3)
 {
     // v1 top, v2 middle, v3 bottom
     if (V1->pos.Y() > V3->pos.Y()) swap(V1, V3);
     if (V2->pos.Y() > V3->pos.Y()) swap(V2, V3);
     if (V1->pos.Y() > V2->pos.Y()) swap(V1, V2);
-    /*
-    printf("(%f, %f), (%f, %f), (%f, %f)\n",
-            (float)V1->pos.X(), (float)V1->pos.Y(),
-            (float)V2->pos.X(), (float)V2->pos.Y(),
-            (float)V3->pos.X(), (float)V3->pos.Y());
-    */
 
-    TriVert v1 = *V1;
-    TriVert v2 = *V2;
-    TriVert v3 = *V3;
+    //printf("(%f, %f), (%f, %f), (%f, %f)\n",
+            //(float)V1->pos.X(), (float)V1->pos.Y(),
+            //(float)V2->pos.X(), (float)V2->pos.Y(),
+            //(float)V3->pos.X(), (float)V3->pos.Y());
+
+    const ProcVert& v1 = *V1;
+    const ProcVert& v2 = *V2;
+    const ProcVert& v3 = *V3;
 
     Gradients grads(v1, v2, v3);
-    Edge edge12(grads, v1, v2, grads.OOZ1, grads.UOZ1, grads.VOZ1);
-    Edge edge13(grads, v1, v3, grads.OOZ1, grads.UOZ1, grads.VOZ1);
-    Edge edge23(grads, v2, v3, grads.OOZ2, grads.UOZ2, grads.VOZ2);
+    Edge edge12(grads, v1, v2, true);
+    Edge edge13(grads, v1, v3, true);
+    Edge edge23(grads, v2, v3, false);
 
     // figure out where v2.x is on long edge
     const float xOnLong = (((v2.pos.Y() - v1.pos.Y()) * (v3.pos.X() - v1.pos.X())) / (v3.pos.Y() - v1.pos.Y())) + v1.pos.X();
@@ -291,7 +342,7 @@ inline void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
     int height = edge12.Height;
     while (height)
     {
-        drawScanLine(grads, left1, right1);
+        drawScanLineTex(grads, left1, right1);
         edge12.Step(); edge13.Step();
         height -= 1;
     }
@@ -299,7 +350,7 @@ inline void renderTriangle(const TriVert* V1, const TriVert* V2, const TriVert* 
     height = edge23.Height;
     while (height)
     {
-        drawScanLine(grads, left2, right2);
+        drawScanLineTex(grads, left2, right2);
         edge23.Step(); edge13.Step();
         height -= 1;
     }
@@ -319,5 +370,10 @@ inline GLuint floatColorToUint(float r, float g, float b, float a)
 
 // these are nicer implemented near their api functions
 void enableOrDisable(GLenum cap, bool val);
+void enableOrDisableCS(GLenum array, bool val);
 bool compareFuncAssign(GLenum func, CompareFuncE& into);
-
+Vec4 getVec4FromArrayPtr(const float* p, const int size);
+void advanceArrayPtr(const float*& p, const DisplayImplContext::ArrayState& as);
+void processVertTriangles();
+void processVertTristripSetup();
+void processVertTristrip();

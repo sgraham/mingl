@@ -35,16 +35,17 @@ class Main : public MinGL, public EventListener
             SetListener(this);
 
             printf("GL_VENDOR: %s\nGL_RENDERER: %s\nGL_VERSION: %s\n", GetString(GL_VENDOR), GetString(GL_RENDERER), GetString(GL_VERSION));
-            printf("sizeof(MinGL): %d\n", sizeof(MinGL));
+            printf("sizeof(mingl::MinGL): %d\n", sizeof(MinGL));
 
             EnableClientState(GL_VERTEX_ARRAY);
+            EnableClientState(GL_TEXTURE_COORD_ARRAY);
 
             Enable(GL_TEXTURE_2D);
             GLuint texid; GenTextures(1, &texid);
             BindTexture(GL_TEXTURE_2D, texid);
             TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, testtex_rgba);
 
-            float delta = 1.f;
+            //float delta = 1.f;
             while (IsOpen())
             {
                 MatrixMode(GL_PROJECTION);
@@ -55,7 +56,7 @@ class Main : public MinGL, public EventListener
                 LoadIdentity();
                 ClearColor(0.f, 0.f, 0.f, 0.f);
                 Clear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-                Color4(1.f, 0.f, 0.f, 1.f);
+                Color(1.f, 0.f, 0.f, 1.f);
 
                 if (0)
                 {
@@ -94,9 +95,9 @@ class Main : public MinGL, public EventListener
                         163.5f, 99.5f,
                         99.5f, 163.5f,
 
-                        163.5f, 99.5f,
+                        //163.5f, 99.5f,
                         163.5f, 163.5f,
-                        99.5f, 163.5f,
+                        //99.5f, 163.5f,
                     };
 
                     float tcs[] =
@@ -105,9 +106,9 @@ class Main : public MinGL, public EventListener
                         63.5f, -0.5f,
                         -0.5f, 63.5f,
 
-                        63.5f, -0.5f,
+                        //63.5f, -0.5f,
                         63.5f, 63.5f,
-                        -0.5f, 63.5f,
+                        //-0.5f, 63.5f,
                     };
 
                     for (unsigned int i = 0; i < sizeof(verts)/sizeof(verts[0]); ++i)
@@ -115,9 +116,9 @@ class Main : public MinGL, public EventListener
                         //verts[i] -= 0.5f;
                     }
 
-                    mOffset += delta;
-                    if (mOffset > 10) delta = -1.f;
-                    if (mOffset < -10) delta = 1.f;
+                    //mOffset += delta;
+                    //if (mOffset > 10) delta = -1.f;
+                    //if (mOffset < -10) delta = 1.f;
 
                     for (unsigned int j = 0; j < sizeof(verts)/sizeof(verts[0]); j += 2)
                     {
@@ -128,7 +129,7 @@ class Main : public MinGL, public EventListener
 
                     VertexPointer(2, GL_FLOAT, 0, verts);
                     TexCoordPointer(2, GL_FLOAT, 0, tcs);
-                    DrawArrays(GL_TRIANGLES, 0, sizeof(verts)/sizeof(verts[0]));
+                    DrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(verts)/sizeof(verts[0])/2);
                 }
 
                 if (0)

@@ -65,14 +65,15 @@ inline void MinGL::ClearStencil(GLint s) { ctx.ClearStencil = s; }
 // --------------------------------------------------------------------------
 inline void MinGL::ClientActiveTexture(GLenum texture)
 {
-    if (texture > GL_TEXTURE0 + TU_NumTextureUnits) MINGL_ERR(GL_INVALID_ENUM);
+    texture -= GL_TEXTURE0;
+    if (texture > TU_NumTextureUnits) MINGL_ERR(GL_INVALID_ENUM);
     ctx.CurClientActiveTexture = texture;
 }
 
 // --------------------------------------------------------------------------
-inline void MinGL::Color4(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
+inline void MinGL::Color(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
-    ctx.Vert.Color = Vec4(red, green, blue, alpha);
+    ctx.Vert.color = Vec4(red, green, blue, alpha);
 }
 
 // --------------------------------------------------------------------------
@@ -108,90 +109,147 @@ inline void MinGL::Disable(GLenum cap) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
 inline void MinGL::DisableClientState(GLenum array)
 {
-    switch(array)
+    enableOrDisableCS(array, false);
+}
+
+
+// --------------------------------------------------------------------------
+inline Vec4 MinGL::getVec4FromArrayPtr(const float* p, const int size)
+{
+    MINGL_ASSERT(size == 2 || size == 3 || size == 4);
+    if (size == 2)
+        return Vec4(p[0], p[1], -100.f, 1.f); // todo; this should be 0.f, 1.f, but because were not xforming yet that'd be /0
+    else if (size == 3)
+        return Vec4(p[0], p[1], p[2], 1.f);
+    else if (size == 4)
+        return Vec4(p[0], p[1], p[2], p[3]);
+    return Vec4();
+}
+
+// --------------------------------------------------------------------------
+inline void MinGL::advanceArrayPtr(const float*& p, const DisplayImplContext::ArrayState& as)
+{
+    p += as.Size;
+    if (as.Stride != 0)
     {
-        case GL_VERTEX_ARRAY: ctx.ClientState &= ~CS_VertexArray; break;
-        case GL_NORMAL_ARRAY: ctx.ClientState &= ~CS_NormalArray; break;
-        case GL_COLOR_ARRAY: ctx.ClientState &= ~CS_ColorArray; break;
-        case GL_TEXTURE_COORD_ARRAY: ctx.ClientState &= ~CS_TexCoordArray; break;
-        default: MINGL_ERR(GL_INVALID_ENUM);
+        const unsigned char*& pAsChar = reinterpret_cast<const unsigned char*&>(p);
+        pAsChar += as.Stride;
     }
+}
+
+// --------------------------------------------------------------------------
+inline void MinGL::processVertTriangles()
+{
+    MINGL_ASSERT(false);
+}
+
+// --------------------------------------------------------------------------
+inline void MinGL::processVertTristripSetup()
+{
+    *ctx.TriPrimGenState.Next = ctx.Vert;
+    ctx.TriPrimGenState.Next = (ctx.TriPrimGenState.Next == &ctx.TriPrimGenState.A)
+        ? &ctx.TriPrimGenState.B
+        : &ctx.TriPrimGenState.A;
+}
+
+// --------------------------------------------------------------------------
+inline void MinGL::processVertTristrip()
+{
+    (this->*ctx.Funcs.Tri)(&ctx.TriPrimGenState.A, &ctx.TriPrimGenState.B, &ctx.Vert);
+    *ctx.TriPrimGenState.Next = ctx.Vert;
+    ctx.TriPrimGenState.Next = (ctx.TriPrimGenState.Next == &ctx.TriPrimGenState.A)
+        ? &ctx.TriPrimGenState.B
+        : &ctx.TriPrimGenState.A;
 }
 
 // --------------------------------------------------------------------------
 inline void MinGL::DrawArrays(GLenum mode, GLint first, GLsizei count)
 {
-    TriVert a, b, c;
-    if (mode == GL_TRIANGLES)
+    if (first < 0) MINGL_ERR(GL_INVALID_VALUE);
+
+    const float* vp = ctx.VertexArray.Data;
+    if (!ctx.VertexArray.Enabled)
     {
-        // todo; multitex
-        const GLint vstep = (ctx.VertexArray.Size + ctx.VertexArray.Stride);
-        const GLint tstep = (ctx.TexCoordArray[0].Size + ctx.TexCoordArray[0].Stride);
-        const GLint vlast = first + count;
-        GLint vi = first;
-        GLint ti = first;
-        while (vi < vlast)
-        {
-            a.pos = Vec4(&ctx.VertexArray.Data[vi]); vi += vstep;
-            b.pos = Vec4(&ctx.VertexArray.Data[vi]); vi += vstep;
-            c.pos = Vec4(&ctx.VertexArray.Data[vi]); vi += vstep; // todo; this is going to load past end on last one.
-            if (ctx.Texture2DEnabled)
-            {
-                a.tex = Vec4(&ctx.TexCoordArray[0].Data[ti]); ti += tstep;
-                b.tex = Vec4(&ctx.TexCoordArray[0].Data[ti]); ti += tstep;
-                c.tex = Vec4(&ctx.TexCoordArray[0].Data[ti]); ti += tstep; // todo; this is going to load past end on last one.
-            }
-            // todo; this is silly
-            if (ctx.VertexArray.Size == 2)
-            {
-                a.pos.SetZ(-100.f);
-                b.pos.SetZ(-100.f);
-                c.pos.SetZ(-100.f);
-            }
-            a.debug = 'a';
-            b.debug = 'b';
-            c.debug = 'c';
-            renderTriangle(&a, &b, &c);
-        }
+        // sort of silly, but there's nothing to do.
+        return;
     }
-    else if (mode == GL_TRIANGLE_STRIP)
+    const int vs = ctx.VertexArray.Size;
+
+    const float* np = ctx.NormalArray.Data;
+    const bool npe = ctx.NormalArray.Enabled;
+
+    const float* cp = ctx.ColorArray.Data;
+    const bool cpe = ctx.ColorArray.Enabled;
+
+    MINGL_ASSERT(TU_NumTextureUnits == 2);
+    const float* t0p = ctx.TexCoordArray[0].Data;
+    const int t0s = ctx.TexCoordArray[0].Size;
+    const bool t0pe = ctx.TexCoordArray[0].Enabled;
+
+    const float* t1p = ctx.TexCoordArray[1].Data;
+    const int t1s = ctx.TexCoordArray[1].Size;
+    const bool t1pe = ctx.TexCoordArray[1].Enabled;
+
+    VertProcFn initialVertProc = 0;
+    VertProcFn mainVertProc = 0;
+    switch (mode)
     {
-        const GLint vstep = (ctx.VertexArray.Size + ctx.VertexArray.Stride);
-        const GLint tstep = (ctx.TexCoordArray[0].Size + ctx.TexCoordArray[0].Stride);
-        const GLint vlast = first + count;
-        GLint vi = first;
-        GLint ti = first;
-        TriVert a, b, c;
-        bool odd = true;
-        while (vi < vlast)
-        {
-            a.pos = Vec4(&ctx.VertexArray.Data[vi]); vi += vstep;
-            b.pos = Vec4(&ctx.VertexArray.Data[vi]);
-            c.pos = Vec4(&ctx.VertexArray.Data[vi + vstep]); // todo; this is going to load past end on last one.
-            if (ctx.Texture2DEnabled)
-            {
-                a.tex = Vec4(&ctx.TexCoordArray[0].Data[ti]); ti += tstep;
-                b.tex = Vec4(&ctx.TexCoordArray[0].Data[ti]);
-                c.tex = Vec4(&ctx.TexCoordArray[0].Data[ti + tstep]); // todo; this is going to load past end on last one.
-            }
-            // todo; this is silly
-            if (ctx.VertexArray.Size == 2)
-            {
-                a.pos.SetZ(-100.f);
-                b.pos.SetZ(-100.f);
-                c.pos.SetZ(-100.f);
-            }
-            if (odd)
-                renderTriangle(&a, &b, &c);
-            else
-                renderTriangle(&a, &c, &b);
-            odd = !odd;
-        }
+        case GL_TRIANGLES:
+            mainVertProc = &MinGL::processVertTriangles;
+            break;
+        case GL_TRIANGLE_STRIP:
+            initialVertProc = &MinGL::processVertTristripSetup;
+            mainVertProc = &MinGL::processVertTristrip;
+            ctx.TriPrimGenState.Next = &ctx.TriPrimGenState.A;
+            break;
+        default: MINGL_ERR(GL_INVALID_ENUM); // todo;
     }
-    else
+    // if mode doesn't need any special handling (i.e. not tristrip/trifan)
+    if (initialVertProc == 0)
+        initialVertProc = mainVertProc;
+
+#define MINGL_PROCESS_VERT_DRAWARRAYS(vertprocfunc)                         \
+    {                                                                       \
+        if (npe)                                                            \
+        {                                                                   \
+            ctx.Vert.normal = Vec4(np[0], np[1], np[2], 0.f);               \
+            advanceArrayPtr(np, ctx.NormalArray);                           \
+        }                                                                   \
+        if (cpe)                                                            \
+        {                                                                   \
+            ctx.Vert.color = Vec4(cp);                                      \
+            advanceArrayPtr(cp, ctx.ColorArray);                            \
+        }                                                                   \
+        if (ctx.Texture2DEnabled)                                           \
+        {                                                                   \
+            if (t0pe)                                                       \
+            {                                                               \
+                ctx.Vert.tex[0] = getVec4FromArrayPtr(t0p, t0s);            \
+                advanceArrayPtr(t0p, ctx.TexCoordArray[0]);                 \
+            }                                                               \
+            if (t1pe)                                                       \
+            {                                                               \
+                ctx.Vert.tex[1] = getVec4FromArrayPtr(t1p, t1s);            \
+                advanceArrayPtr(t1p, ctx.TexCoordArray[1]);                 \
+            }                                                               \
+        }                                                                   \
+        ctx.Vert.pos = getVec4FromArrayPtr(vp, vs);                         \
+        advanceArrayPtr(vp, ctx.VertexArray);                               \
+        (this->*vertprocfunc)();                                            \
+    }
+
+    GLint i;
+    count *= vs;
+    for (i = first; i < count && i < vs * 2; i += vs)
     {
-        MINGL_ERR(GL_INVALID_ENUM);
+        MINGL_PROCESS_VERT_DRAWARRAYS(initialVertProc)
     }
+    for (; i < count; i += vs)
+    {
+        MINGL_PROCESS_VERT_DRAWARRAYS(mainVertProc)
+    }
+
+#undef MINGL_PROCESS_VERT_DRAWARRAYS
 }
 
 // --------------------------------------------------------------------------
@@ -206,20 +264,21 @@ inline void MinGL::Enable(GLenum cap)
 // --------------------------------------------------------------------------
 inline void MinGL::EnableClientState(GLenum array)
 {
-    switch(array)
-    {
-        case GL_VERTEX_ARRAY: ctx.ClientState |= CS_VertexArray; break;
-        case GL_NORMAL_ARRAY: ctx.ClientState |= CS_NormalArray; break;
-        case GL_COLOR_ARRAY: ctx.ClientState |= CS_ColorArray; break;
-        case GL_TEXTURE_COORD_ARRAY: ctx.ClientState |= CS_TexCoordArray; break;
-        default: MINGL_ERR(GL_INVALID_ENUM);
-    }
+    enableOrDisableCS(array, true);
 }
 
 // --------------------------------------------------------------------------
-inline void MinGL::Finish() { MINGL_ASSERT(0); }
+inline void MinGL::Finish()
+{
+    // nothing's deferred right now
+}
+
 // --------------------------------------------------------------------------
-inline void MinGL::Flush() { MINGL_ASSERT(0); }
+inline void MinGL::Flush()
+{
+    // nothing's deferred right now
+}
+
 // --------------------------------------------------------------------------
 inline void MinGL::Fog(GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
@@ -248,7 +307,7 @@ inline void MinGL::Frustum(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n
 inline void MinGL::GenTextures(GLsizei n, GLuint *textures)
 {
     for (GLsizei i = 0; i < n; ++i)
-        textures[i] = ctx.CurTexId++;
+        textures[i] = ctx.GenTexIdCounter++;
 }
 
 // --------------------------------------------------------------------------
@@ -331,9 +390,19 @@ inline void MinGL::MultMatrix(const GLfloat *m)
 }
 
 // --------------------------------------------------------------------------
-inline void MinGL::MultiTexCoord4(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q) { MINGL_ASSERT(0); }
+inline void MinGL::MultiTexCoord(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q)
+{
+    target -= GL_TEXTURE0;
+    if (target > TU_NumTextureUnits) MINGL_ERR(GL_INVALID_ENUM);
+    ctx.Vert.tex[target] = Vec4(s, t, r, q);
+}
+
 // --------------------------------------------------------------------------
-inline void MinGL::Normal3(GLfloat nx, GLfloat ny, GLfloat nz) { MINGL_ASSERT(0); }
+inline void MinGL::Normal(GLfloat nx, GLfloat ny, GLfloat nz)
+{
+    ctx.Vert.normal = Vec4(nx, ny, nz, 0.f);
+}
+
 // --------------------------------------------------------------------------
 inline void MinGL::NormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer) { MINGL_ASSERT(0); }
 
@@ -353,7 +422,7 @@ inline void MinGL::Ortho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, 
 }
 
 // --------------------------------------------------------------------------
-inline void MinGL::PixelStorei(GLenum pname, GLint param) { MINGL_ASSERT(0); }
+inline void MinGL::PixelStore(GLenum pname, GLint param) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
 inline void MinGL::PointSize(GLfloat size) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
@@ -512,6 +581,18 @@ inline void MinGL::enableOrDisable(GLenum cap, bool val)
             break;
         default:
             MINGL_ASSERT(0);
+    }
+}
+// --------------------------------------------------------------------------
+inline void MinGL::enableOrDisableCS(GLenum array, bool val)
+{
+    switch(array)
+    {
+        case GL_VERTEX_ARRAY: ctx.VertexArray.Enabled = val; break;
+        case GL_NORMAL_ARRAY: ctx.NormalArray.Enabled = val; break;
+        case GL_COLOR_ARRAY: ctx.ColorArray.Enabled = val; break;
+        case GL_TEXTURE_COORD_ARRAY: ctx.TexCoordArray[ctx.CurClientActiveTexture].Enabled = val; break;
+        default: MINGL_ERR(GL_INVALID_ENUM);
     }
 }
 

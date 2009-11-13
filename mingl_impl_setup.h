@@ -48,14 +48,6 @@ enum TextureUnitsE
     TU_NumTextureUnits,
 };
 
-enum ClientStateE
-{
-    CS_VertexArray = 0x001,
-    CS_ColorArray = 0x002,
-    CS_NormalArray = 0x004,
-    CS_TexCoordArray = 0x008,
-};
-
 enum CompareFuncE
 {
     CF_Never,

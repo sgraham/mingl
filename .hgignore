@@ -5,3 +5,5 @@ testtex.cpp
 test
 tags
 mingl.h
+syntax: regexp
+^examples/ex\d\d$

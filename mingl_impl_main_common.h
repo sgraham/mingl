@@ -226,8 +226,24 @@ inline void MinGL::Fog(GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
 inline void MinGL::Fog(GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
 inline void MinGL::FrontFace(GLenum mode) { MINGL_ASSERT(0); }
+
 // --------------------------------------------------------------------------
-inline void MinGL::Frustum(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar) { MINGL_ASSERT(0); }
+inline void MinGL::Frustum(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
+{
+    if (n <= 0.f
+            || f <= 0.f
+            || l == r
+            || b == t
+            || n ==f)
+        MINGL_ERR(GL_INVALID_VALUE);
+
+    *ctx.CurMatrix[ctx.MatrixMode] = Mat44(
+            (2*n)/(r-l), 0.f, (r+l)/(r-l), 0.f,
+            0.f, (2*n)/(t-b), (t+b)/(t-b), 0.f,
+            0.f, 0.f, -((f+n)/(f-n)), -((2*f*n)/(f-n)),
+            0.f, 0.f, -1.f, 0.f);
+}
+
 // --------------------------------------------------------------------------
 inline void MinGL::GenTextures(GLsizei n, GLuint *textures)
 {
@@ -320,8 +336,22 @@ inline void MinGL::MultiTexCoord4(GLenum target, GLfloat s, GLfloat t, GLfloat r
 inline void MinGL::Normal3(GLfloat nx, GLfloat ny, GLfloat nz) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
 inline void MinGL::NormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer) { MINGL_ASSERT(0); }
+
 // --------------------------------------------------------------------------
-inline void MinGL::Ortho(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar) { MINGL_ASSERT(0); }
+inline void MinGL::Ortho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
+{
+    if (l == r
+            || b == t
+            || n ==f)
+        MINGL_ERR(GL_INVALID_VALUE);
+
+    *ctx.CurMatrix[ctx.MatrixMode] = Mat44(
+            2.f/(r-l), 0.f, 0.f, -((r+l)/(r-l)),
+            0.f, 2.f/(t-b), 0.f, -((t+b)/(t-b)),
+            0.f, 0.f, -(2.f/(f-n)), -((f+n)/(f-n)),
+            0.f, 0.f, 0.f, 1.f);
+}
+
 // --------------------------------------------------------------------------
 inline void MinGL::PixelStorei(GLenum pname, GLint param) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
@@ -418,7 +448,14 @@ inline void MinGL::TexParameter(GLenum target, GLenum pname, GLfloat param) { MI
 // --------------------------------------------------------------------------
 inline void MinGL::TexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
-inline void MinGL::Translate(GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
+inline void MinGL::Translate(GLfloat x, GLfloat y, GLfloat z)
+{
+    *ctx.CurMatrix[ctx.MatrixMode] *= Mat44(
+            0.f, 0.f, 0.f, x,
+            0.f, 0.f, 0.f, y,
+            0.f, 0.f, 0.f, z,
+            0.f, 0.f, 0., 1.f);
+}
 
 // --------------------------------------------------------------------------
 inline void MinGL::VertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)

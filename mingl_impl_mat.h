@@ -7,10 +7,10 @@ class Mat44
 
         Mat44() {}
         Mat44(const GLfloat* f)
-            : c1(f)
-            , c2(f + 4)
-            , c3(f + 8)
-            , c4(f + 12)
+            : c1(f[0], f[4], f[8], f[12])
+            , c2(f[1], f[5], f[9], f[13])
+            , c3(f[2], f[6], f[10], f[14])
+            , c4(f[3], f[7], f[11], f[15])
         {}
         Mat44(float f0, float f1, float f2, float f3,
               float f4, float f5, float f6, float f7,

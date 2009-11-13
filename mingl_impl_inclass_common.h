@@ -33,7 +33,7 @@ struct DisplayImplContext
         for (int i = 0; i < TU_NumTextureUnits; ++i)
             TexCoordArray[i].Enabled = false;
 
-        Funcs.Tri = &MinGL::renderTriangleTex;
+        Funcs.Tri = &MinGL::renderTriangleGouraud;
     }
 
     MatrixModeE MatrixMode;
@@ -259,6 +259,103 @@ class Edge
             MINGL_DECLARE_COZ(AOZ);
         #undef MINGL_DECLARE_COZ
 };
+
+// todo; macros/genericize this stuff once it's clear what else needs to happen
+
+inline void drawScanLineGouraud(const Gradients& grads, const Edge* left, const Edge* right)
+{
+    const int xstart = ceil(left->X);
+    const float xprestep = xstart - left->X;
+
+    GLuint* dest = ctx.Buf.C + left->Y * ctx.Buf.Stride + xstart;
+    int width = ceil(right->X) - xstart;
+
+    float ooz = left->OOZ + xprestep * grads.dOOZdX;
+    float roz = left->ROZ + xprestep * grads.dROZdX;
+    float goz = left->GOZ + xprestep * grads.dGOZdX;
+    float boz = left->BOZ + xprestep * grads.dBOZdX;
+    float aoz = left->AOZ + xprestep * grads.dAOZdX;
+
+    //printf("width: %d, xstart: %d, lX: %f, rX: %f\n", width, xstart, left->X, right->X);
+    //printf("ooz: %f, uoz: %f, voz: %f\n", ooz, uoz, voz);
+    while (width-- > 0)
+    {
+        float z = 1 / ooz;
+        float fr = (roz * z);
+        float fg = (goz * z);
+        float fb = (boz * z);
+        float fa = (aoz * z);
+        *dest++ += floatColorToUint(fr, fg, fb, fa);
+
+        ooz += grads.dOOZdX;
+        roz += grads.dROZdX;
+        goz += grads.dGOZdX;
+        boz += grads.dBOZdX;
+        aoz += grads.dAOZdX;
+    }
+}
+
+inline void renderTriangleGouraud(const ProcVert* V1, const ProcVert* V2, const ProcVert* V3)
+{
+    // v1 top, v2 middle, v3 bottom
+    if (V1->pos.Y() > V3->pos.Y()) swap(V1, V3);
+    if (V2->pos.Y() > V3->pos.Y()) swap(V2, V3);
+    if (V1->pos.Y() > V2->pos.Y()) swap(V1, V2);
+
+    //printf("(%f, %f), (%f, %f), (%f, %f)\n",
+            //(float)V1->pos.X(), (float)V1->pos.Y(),
+            //(float)V2->pos.X(), (float)V2->pos.Y(),
+            //(float)V3->pos.X(), (float)V3->pos.Y());
+
+    const ProcVert& v1 = *V1;
+    const ProcVert& v2 = *V2;
+    const ProcVert& v3 = *V3;
+
+    Gradients grads(v1, v2, v3);
+    Edge edge12(grads, v1, v2, true);
+    Edge edge13(grads, v1, v3, true);
+    Edge edge23(grads, v2, v3, false);
+
+    // figure out where v2.x is on long edge
+    const float xOnLong = (((v2.pos.Y() - v1.pos.Y()) * (v3.pos.X() - v1.pos.X())) / (v3.pos.Y() - v1.pos.Y())) + v1.pos.X();
+    //printf("xOnLong: %f\n", xOnLong);
+
+    //printf("scanning in %c %c %c\n", v1.debug, v2.debug, v3.debug);
+    const Edge* left1;
+    const Edge* right1;
+    const Edge* left2;
+    const Edge* right2;
+    if (v2.pos.X() > xOnLong)
+    {
+        left1 = left2 = &edge13;
+        right1 = &edge12;
+        right2 = &edge23;
+        //printf("here\n");
+    }
+    else
+    {
+        //printf("else\n");
+        left1 = &edge12;
+        left2 = &edge23;
+        right1 = right2 = &edge13;
+    }
+    int height = edge12.Height;
+    while (height)
+    {
+        drawScanLineGouraud(grads, left1, right1);
+        edge12.Step(); edge13.Step();
+        height -= 1;
+    }
+
+    height = edge23.Height;
+    while (height)
+    {
+        drawScanLineGouraud(grads, left2, right2);
+        edge23.Step(); edge13.Step();
+        height -= 1;
+    }
+    //printf("pixels: %d\n", pixelCount);
+}
 
 inline void drawScanLineTex(const Gradients& grads, const Edge* left, const Edge* right)
 {

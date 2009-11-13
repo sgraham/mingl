@@ -78,8 +78,18 @@ inline void MinGL::Color(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha
 
 // --------------------------------------------------------------------------
 inline void MinGL::ColorMask(bool red, bool green, bool blue, bool alpha) { MINGL_ASSERT(0); }
+
 // --------------------------------------------------------------------------
-inline void MinGL::ColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) { MINGL_ASSERT(0); }
+inline void MinGL::ColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
+{
+    if (size != 4) MINGL_ERR(GL_INVALID_VALUE);
+    if (stride < 0) MINGL_ERR(GL_INVALID_VALUE);
+    if (type != GL_FLOAT) MINGL_ERR(GL_INVALID_ENUM);
+    ctx.ColorArray.Data = reinterpret_cast<const float*>(pointer);
+    ctx.ColorArray.Size = size;
+    ctx.ColorArray.Stride = stride;
+}
+
 // --------------------------------------------------------------------------
 inline void MinGL::CompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid *data) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
@@ -578,6 +588,14 @@ inline void MinGL::enableOrDisable(GLenum cap, bool val)
     {
         case GL_TEXTURE_2D:
             ctx.Texture2DEnabled = val;
+            if (val)
+            {
+                ctx.Funcs.Tri = &MinGL::renderTriangleTex;
+            }
+            else
+            {
+                ctx.Funcs.Tri = &MinGL::renderTriangleGouraud;
+            }
             break;
         default:
             MINGL_ASSERT(0);

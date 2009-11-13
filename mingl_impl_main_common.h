@@ -1,13 +1,22 @@
 namespace mingl
 {
 
+
+// --------------------------------------------------------------------------
 inline void MinGL::ActiveTexture(GLenum texture)
 {
-    MINGL_ASSERT(0);
+    if (texture > GL_TEXTURE0 + TU_NumTextureUnits) MINGL_ERR(GL_INVALID_ENUM);
+    ctx.CurActiveTexture = texture;
 }
 
-inline void MinGL::AlphaFunc(GLenum func, GLclampf ref) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
+inline void MinGL::AlphaFunc(GLenum func, GLclampf ref)
+{
+    if (!compareFuncAssign(func, ctx.AlphaCompareFunc)) return;
+    ctx.AlphaCompareValue = ref;
+}
 
+// --------------------------------------------------------------------------
 inline void MinGL::BindTexture(GLenum target, GLuint texture)
 {
     if (target != GL_TEXTURE_2D) MINGL_ERR(GL_INVALID_ENUM);
@@ -22,8 +31,10 @@ inline void MinGL::BindTexture(GLenum target, GLuint texture)
     }
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::BlendFunc(GLenum sfactor, GLenum dfactor) { MINGL_ASSERT(0); }
 
+// --------------------------------------------------------------------------
 inline void MinGL::Clear(GLbitfield mask)
 {
     int dim = ctx.Buf.Width * ctx.Buf.Height;
@@ -39,37 +50,62 @@ inline void MinGL::Clear(GLbitfield mask)
     }
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::ClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
 {
     ctx.ClearColor = floatColorToUint(red, green, blue, alpha);
 }
 
-inline void MinGL::ClearDepth(GLclampf depth) { MINGL_ASSERT(0); }
-inline void MinGL::ClearStencil(GLint s) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
+inline void MinGL::ClearDepth(GLclampf depth) { ctx.ClearDepth = depth; }
+
+// --------------------------------------------------------------------------
+inline void MinGL::ClearStencil(GLint s) { ctx.ClearStencil = s; }
+
+// --------------------------------------------------------------------------
 inline void MinGL::ClientActiveTexture(GLenum texture)
 {
     if (texture > GL_TEXTURE0 + TU_NumTextureUnits) MINGL_ERR(GL_INVALID_ENUM);
-    ctx.CurActiveTexture = texture;
+    ctx.CurClientActiveTexture = texture;
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::Color4(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
     ctx.Vert.Color = Vec4(red, green, blue, alpha);
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::ColorMask(bool red, bool green, bool blue, bool alpha) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::ColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::CompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid *data) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::CompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const GLvoid *data) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::CopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::CopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::CullFace(GLenum mode) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::DeleteTextures(GLsizei n, const GLuint *textures) { MINGL_ASSERT(0); }
-inline void MinGL::DepthFunc(GLenum func) { MINGL_ASSERT(0); }
+
+// --------------------------------------------------------------------------
+inline void MinGL::DepthFunc(GLenum func)
+{
+    compareFuncAssign(func, ctx.DepthCompareFunc);
+}
+
+// --------------------------------------------------------------------------
 inline void MinGL::DepthMask(bool flag) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::DepthRange(GLclampf zNear, GLclampf zFar) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::Disable(GLenum cap) { MINGL_ASSERT(0); }
 
+// --------------------------------------------------------------------------
 inline void MinGL::DisableClientState(GLenum array)
 {
     switch(array)
@@ -82,6 +118,7 @@ inline void MinGL::DisableClientState(GLenum array)
     }
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::DrawArrays(GLenum mode, GLint first, GLsizei count)
 {
     TriVert a, b, c;
@@ -157,25 +194,16 @@ inline void MinGL::DrawArrays(GLenum mode, GLint first, GLsizei count)
     }
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::DrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices) { MINGL_ASSERT(0); }
 
-inline void MinGL::enableOrDisable(GLenum cap, bool val)
-{
-    switch (cap)
-    {
-        case GL_TEXTURE_2D:
-            ctx.Texture2DEnabled = val;
-            break;
-        default:
-            MINGL_ASSERT(0);
-    }
-}
-
+// --------------------------------------------------------------------------
 inline void MinGL::Enable(GLenum cap)
 {
     enableOrDisable(cap, true);
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::EnableClientState(GLenum array)
 {
     switch(array)
@@ -188,18 +216,26 @@ inline void MinGL::EnableClientState(GLenum array)
     }
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::Finish() { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::Flush() { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::Fog(GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::Fog(GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::FrontFace(GLenum mode) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::Frustum(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::GenTextures(GLsizei n, GLuint *textures)
 {
     for (GLsizei i = 0; i < n; ++i)
         textures[i] = ctx.CurTexId++;
 }
 
+// --------------------------------------------------------------------------
 inline GLenum MinGL::GetError()
 {
     GLenum ret = ctx.Error;
@@ -207,8 +243,10 @@ inline GLenum MinGL::GetError()
     return ret;
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::GetIntegerv(GLenum pname, GLint *params) { MINGL_ASSERT(0); }
 
+// --------------------------------------------------------------------------
 inline const GLubyte* MinGL::GetString(GLenum name)
 {
     switch (name)
@@ -221,13 +259,20 @@ inline const GLubyte* MinGL::GetString(GLenum name)
     }
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::Hint(GLenum target, GLenum mode) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::LightModel(GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::LightModel(GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::Light(GLenum light, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::Light(GLenum light, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::LineWidth(GLfloat width) { MINGL_ASSERT(0); }
 
+// --------------------------------------------------------------------------
 inline void MinGL::LoadIdentity()
 {
     *ctx.CurMatrix[ctx.MatrixMode] = Mat44(
@@ -237,15 +282,20 @@ inline void MinGL::LoadIdentity()
             0.f, 0.f, 0.f, 1.f);
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::LoadMatrix(const GLfloat *m)
 {
     *ctx.CurMatrix[ctx.MatrixMode] = Mat44(m);
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::LogicOp(GLenum opcode) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::Material(GLenum face, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::Material(GLenum face, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
 
+// --------------------------------------------------------------------------
 inline void MinGL::MatrixMode(GLenum mode)
 {
     switch (mode)
@@ -257,30 +307,69 @@ inline void MinGL::MatrixMode(GLenum mode)
     }
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::MultMatrix(const GLfloat *m)
 {
     Mat44 mm(m);
-    MINGL_ASSERT(false);
+    *ctx.CurMatrix[ctx.MatrixMode] *= mm;
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::MultiTexCoord4(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::Normal3(GLfloat nx, GLfloat ny, GLfloat nz) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::NormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::Ortho(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::PixelStorei(GLenum pname, GLint param) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::PointSize(GLfloat size) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::PolygonOffset(GLfloat factor, GLfloat units) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::PopMatrix() { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::PushMatrix() { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::ReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels) { MINGL_ASSERT(0); }
-inline void MinGL::Rotate(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
-inline void MinGL::Scale(GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
+
+// --------------------------------------------------------------------------
+inline void MinGL::Rotate(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
+{
+    MINGL_ASSERT(0);
+}
+
+// --------------------------------------------------------------------------
+inline void MinGL::Scale(GLfloat x, GLfloat y, GLfloat z)
+{
+    *ctx.CurMatrix[ctx.MatrixMode] *= Mat44(
+            x, 0.f, 0.f, 0.f,
+            0.f, y, 0.f, 0.f,
+            0.f, 0.f, z, 0.f,
+            0.f, 0.f, 0., 1.f);
+}
+
+// --------------------------------------------------------------------------
 inline void MinGL::Scissor(GLint x, GLint y, GLsizei width, GLsizei height) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::ShadeModel(GLenum mode) { MINGL_ASSERT(0); }
-inline void MinGL::StencilFunc(GLenum func, GLint ref, GLuint mask) { MINGL_ASSERT(0); }
+
+// --------------------------------------------------------------------------
+inline void MinGL::StencilFunc(GLenum func, GLint ref, GLuint mask)
+{
+    if (!compareFuncAssign(func, ctx.StencilCompareFunc)) return;
+    ctx.StencilCompareValue = ref;
+    ctx.StencilCompareMask = mask;
+}
+
+// --------------------------------------------------------------------------
 inline void MinGL::StencilMask(GLuint mask) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::StencilOp(GLenum fail, GLenum zfail, GLenum zpass) { MINGL_ASSERT(0); }
 
+// --------------------------------------------------------------------------
 inline void MinGL::TexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
     ctx.TexCoordArray[0].Data = reinterpret_cast<const float*>(pointer);
@@ -291,8 +380,11 @@ inline void MinGL::TexCoordPointer(GLint size, GLenum type, GLsizei stride, cons
     if (stride < 0) MINGL_ERR(GL_INVALID_VALUE);
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::TexEnv(GLenum target, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::TexEnv(GLenum target, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::TexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels)
 {
     if (target != GL_TEXTURE_2D) MINGL_ERR(GL_INVALID_ENUM);
@@ -321,10 +413,14 @@ inline void MinGL::TexImage2D(GLenum target, GLint level, GLint internalformat, 
     ctx.CurrentTexture->Height = height;
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::TexParameter(GLenum target, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::TexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) { MINGL_ASSERT(0); }
+// --------------------------------------------------------------------------
 inline void MinGL::Translate(GLfloat x, GLfloat y, GLfloat z) { MINGL_ASSERT(0); }
 
+// --------------------------------------------------------------------------
 inline void MinGL::VertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
     ctx.VertexArray.Data = reinterpret_cast<const float*>(pointer);
@@ -335,6 +431,39 @@ inline void MinGL::VertexPointer(GLint size, GLenum type, GLsizei stride, const 
     if (stride < 0) MINGL_ERR(GL_INVALID_VALUE);
 }
 
+// --------------------------------------------------------------------------
 inline void MinGL::Viewport(GLint x, GLint y, GLsizei width, GLsizei height) { MINGL_ASSERT(0); }
+
+
+// --------------------------------------------------------------------------
+inline bool MinGL::compareFuncAssign(GLenum func, CompareFuncE& into)
+{
+    switch (func)
+    {
+        case GL_NEVER: into = CF_Never; return true;
+        case GL_LESS: into = CF_Less; return true;
+        case GL_EQUAL: into = CF_Equal; return true;
+        case GL_LEQUAL: into = CF_LessEqual; return true;
+        case GL_GREATER: into = CF_Greater; return true;
+        case GL_NOTEQUAL: into = CF_NotEqual; return true;
+        case GL_GEQUAL: into = CF_GreaterEqual; return true;
+        case GL_ALWAYS: into = CF_Always; return true;
+        default: MINGL_ERR_WRET(GL_INVALID_ENUM, false);
+    }
+}
+
+// --------------------------------------------------------------------------
+inline void MinGL::enableOrDisable(GLenum cap, bool val)
+{
+    switch (cap)
+    {
+        case GL_TEXTURE_2D:
+            ctx.Texture2DEnabled = val;
+            break;
+        default:
+            MINGL_ASSERT(0);
+    }
+}
+
 
 }

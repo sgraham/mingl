@@ -1,7 +1,10 @@
 class Mat44
 {
     public:
+        typedef const Mat44& Arg;
+
         Vec4 c1, c2, c3, c4;
+
         Mat44() {}
         Mat44(const GLfloat* f)
             : c1(f)
@@ -18,5 +21,39 @@ class Mat44
             , c3(f8, f9, f10, f11)
             , c4(f12, f13, f14, f15)
         {}
+        Mat44(Vec4::Arg v1,
+              Vec4::Arg v2,
+              Vec4::Arg v3,
+              Vec4::Arg v4)
+            : c1(v1)
+            , c2(v2)
+            , c3(v3)
+            , c4(v4)
+        {}
 };
 
+inline Vec4 operator*(Mat44::Arg m, Vec4::Arg v)
+{
+    NativeVectorType x, y, z, w, ret;
+
+    MINGL_VECTOR_SPLAT_I(x, v.v, 0);
+    MINGL_VECTOR_SPLAT_I(x, v.v, 1);
+    MINGL_VECTOR_SPLAT_I(x, v.v, 2);
+    MINGL_VECTOR_SPLAT_I(x, v.v, 3);
+
+    MINGL_VECTOR_MULT(ret, m.c1.v, x);
+    MINGL_VECTOR_MADD(ret, m.c2.v, y, ret);
+    MINGL_VECTOR_MADD(ret, m.c3.v, z, ret);
+    MINGL_VECTOR_MADD(ret, m.c4.v, w, ret);
+
+    return Vec4(ret);
+}
+
+inline Mat44& operator*=(Mat44& a, Mat44::Arg b)
+{
+    a = Mat44(b * a.c1,
+              b * a.c2,
+              b * a.c3,
+              b * a.c4);
+    return a;
+}

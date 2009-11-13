@@ -62,6 +62,7 @@ class Vec4
         {
             MINGL_VECTOR_SET_FROM_FLOATS(v, a, b, c, d);
         }
+        Vec4(const NativeVectorType& v) : v(v) {}
 
         const VecFloatRef<0> X() const { return VecFloatRef<0>(v); }
         const VecFloatRef<1> Y() const { return VecFloatRef<1>(v); }

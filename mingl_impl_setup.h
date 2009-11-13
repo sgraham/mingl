@@ -56,6 +56,18 @@ enum ClientStateE
     CS_TexCoordArray = 0x008,
 };
 
+enum CompareFuncE
+{
+    CF_Never,
+    CF_Less,
+    CF_Equal,
+    CF_LessEqual,
+    CF_Greater,
+    CF_NotEqual,
+    CF_GreaterEqual,
+    CF_Always,
+};
+
 enum { MaxMatrixStackDepth = 16 };
 
 struct Texture

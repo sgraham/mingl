@@ -79,4 +79,12 @@ namespace mingl
     return af > bf;                                     \
 } while(0)
 
+#define MINGL_VECTOR_MULT(r, v0, v1) do {               \
+    ret = _mm_mul_ps(v0, v1);                           \
+} while(0)
+
+#define MINGL_VECTOR_MADD(r, v0, v1, v2) do {           \
+    ret = _mm_add_ps(_mm_mul_ps(v0, v1), v2);           \
+} while(0)
+
 #endif

@@ -133,8 +133,9 @@ struct DisplayImplContext
     {
         for (int i = 0; i < MM_NumMatrixModes; ++i)
             CurMatrix[i] = &MatrixStack[i][0];
-        ClearDepth = 0.f;
         ClearColor = 0;
+        ClearDepth = 1.f;
+        ClearStencil = 0;
         Error = 0;
         CurTexId = 1;
         CurColor = Vec4(1.f, 1.f, 1.f, 1.f);
@@ -142,6 +143,7 @@ struct DisplayImplContext
         for (int i = 0; i < TU_NumTextureUnits; ++i)
             CurTexCoords[i] = Vec4(0.f, 0.f, 0.f, 1.f);
         CurActiveTexture = 0;
+        CurClientActiveTexture = 0;
         Texture2DEnabled = false;
     }
 
@@ -149,8 +151,9 @@ struct DisplayImplContext
     Mat44 MatrixStack[MM_NumMatrixModes][MaxMatrixStackDepth] __attribute__((aligned(16)));
     Mat44* CurMatrix[MM_NumMatrixModes];
 
-    float ClearDepth;
     GLuint ClearColor;
+    float ClearDepth;
+    GLuint ClearStencil;
 
     GLenum Error;
 
@@ -184,6 +187,7 @@ struct DisplayImplContext
     ArrayState ColorArray;
     ArrayState TexCoordArray[TU_NumTextureUnits];
     int CurActiveTexture;
+    int CurClientActiveTexture;
 
     bool Texture2DEnabled;
     Texture* CurrentTexture;
@@ -193,6 +197,15 @@ struct DisplayImplContext
     Vec4 CurColor;
     Vec4 CurNormal;
     Vec4 CurTexCoords[TU_NumTextureUnits];
+
+    CompareFuncE AlphaCompareFunc;
+    float AlphaCompareValue;
+
+    CompareFuncE DepthCompareFunc;
+
+    CompareFuncE StencilCompareFunc;
+    GLint StencilCompareValue;
+    GLuint StencilCompareMask;
 };
 
 inline void drawScanLine(const Gradients& grads, const Edge* left, const Edge* right)
@@ -302,3 +315,9 @@ inline GLuint floatColorToUint(float r, float g, float b, float a)
     GLuint ai = (GLuint)(a * 255.f);
     return (bi << 24) | (gi << 16) | (ri << 8) | ai;
 }
+
+
+// these are nicer implemented near their api functions
+void enableOrDisable(GLenum cap, bool val);
+bool compareFuncAssign(GLenum func, CompareFuncE& into);
+

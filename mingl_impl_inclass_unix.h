@@ -251,9 +251,6 @@ void initializeKeyMaps()
     mFunctionKeys[0xff & XK_Alt_R] = Key::Alt;
 }
 
-// these are nicer implemented near their api functions
-void enableOrDisable(GLenum cap, bool val);
-
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------

@@ -379,7 +379,7 @@ inline void MinGL::Rotate(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
     Mat44 tmp(
             x*x*(1-c)+c,   x*y*(1-c)-z*s, x*z*(1-c)+y*s, 0.f,
             x*y*(1-c)+z*s, y*y*(1-c)+c,   y*z*(1-c)*x*s, 0.f,
-            x*z*(1-c)-y*s, y*z(1-c)+x*s,  z*z*(1-c)+c,   0.f,
+            x*z*(1-c)-y*s, y*z*(1-c)+x*s, z*z*(1-c)+c,   0.f,
             0.f,           0.f,           0.f,           1.f);
     *ctx.CurMatrix[ctx.MatrixMode] *= tmp;
 }

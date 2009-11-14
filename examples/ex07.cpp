@@ -7,15 +7,11 @@ int main()
     MinGL gl;
 
     GLfloat square[] = {
-        0.25, 0.25, -100.0,
-        0.75, 0.25, -100.0,
-        0.25, 0.75, -100.0,
-        0.75, 0.75, -100.0,
+        0.25, 0.25, 0.f,
+        0.75, 0.25, 0.f,
+        0.25, 0.75, 0.f,
+        0.75, 0.75, 0.f,
     };
-    for (size_t i = 0; i < sizeof(square)/sizeof(square[0]); ++i)
-    {
-        square[i] *= 100.f;
-    }
 
     gl.ClearColor(0.f, 0.f, 0.f, 0.f);
     gl.MatrixMode(GL_PROJECTION);

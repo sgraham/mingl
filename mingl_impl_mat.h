@@ -16,10 +16,10 @@ class Mat44
               float f4, float f5, float f6, float f7,
               float f8, float f9, float f10, float f11,
               float f12, float f13, float f14, float f15)
-            : c1(f0, f1, f2, f3)
-            , c2(f4, f5, f6, f7)
-            , c3(f8, f9, f10, f11)
-            , c4(f12, f13, f14, f15)
+            : c1(f0, f4, f8, f12)
+            , c2(f1, f5, f9, f13)
+            , c3(f2, f6, f10, f14)
+            , c4(f3, f7, f11, f15)
         {}
         Mat44(Vec4::Arg v1,
               Vec4::Arg v2,

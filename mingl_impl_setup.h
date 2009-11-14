@@ -33,6 +33,13 @@ template <class T> void swap(T& a, T& b)
     b = c;
 }
 
+template <class T> T clamp(T toclamp, T lower = 0, T upper = 1)
+{
+    if (toclamp < lower) toclamp = lower;
+    if (toclamp > upper) toclamp = upper;
+    return toclamp;
+}
+
 enum MatrixModeE
 {
     MM_ModelView = 0,

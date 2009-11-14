@@ -88,12 +88,7 @@ inline MinGL::MinGL(const char* title, int width, int height)
     ::XMapRaised(mDisplay, mWindow);
     ::XFlush(mDisplay);
 
-    // todo; configurable mem alloc
-    ctx.Buf.Z = new float[width * height];
-    ctx.Buf.C = new GLuint[width * height];
-    ctx.Buf.Width = width;
-    ctx.Buf.Stride = width;
-    ctx.Buf.Height = height;
+    ctx.Init(this, width, height);
 
     mIsOpen = true;
 }

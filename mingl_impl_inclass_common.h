@@ -36,6 +36,30 @@ struct DisplayImplContext
         Funcs.Tri = &MinGL::renderTriangleGouraud;
     }
 
+    void Init(MinGL* self, int w, int h)
+    {
+        Buf.Z = reinterpret_cast<float*>(MINGL_ALLOCATE_MEMORY(sizeof(float) * w * h));
+        Buf.C = reinterpret_cast<GLuint*>(MINGL_ALLOCATE_MEMORY(sizeof(GLuint) * w * h));
+        Buf.Width = w;
+        Buf.Stride = w;
+        Buf.Height = h;
+
+        self->DepthRange(0.f, 1.f);
+        self->Viewport(0, 0, w, h);
+        self->MatrixMode(GL_MODELVIEW);
+        self->LoadIdentity();
+        self->MatrixMode(GL_PROJECTION);
+        self->LoadIdentity();
+        self->MatrixMode(GL_TEXTURE);
+        self->LoadIdentity();
+    }
+
+    ~DisplayImplContext()
+    {
+        MINGL_FREE_MEMORY(Buf.C);
+        MINGL_FREE_MEMORY(Buf.Z);
+    }
+
     MatrixModeE MatrixMode;
     Mat44 MatrixStack[MM_NumMatrixModes][MaxMatrixStackDepth];
     Mat44* CurMatrix[MM_NumMatrixModes];
@@ -101,6 +125,18 @@ struct DisplayImplContext
     CompareFuncE StencilCompareFunc;
     GLint StencilCompareValue;
     GLuint StencilCompareMask;
+
+    struct ViewportState
+    {
+        int Ox;
+        int Oy;
+        int Px2;
+        int Py2;
+        float F;
+        float N;
+    };
+    ViewportState Viewport;
+
 };
 
 class Gradients
@@ -302,10 +338,10 @@ inline void renderTriangleGouraud(const ProcVert* V1, const ProcVert* V2, const 
     if (V2->pos.Y() > V3->pos.Y()) swap(V2, V3);
     if (V1->pos.Y() > V2->pos.Y()) swap(V1, V2);
 
-    //printf("(%f, %f), (%f, %f), (%f, %f)\n",
-            //(float)V1->pos.X(), (float)V1->pos.Y(),
-            //(float)V2->pos.X(), (float)V2->pos.Y(),
-            //(float)V3->pos.X(), (float)V3->pos.Y());
+    printf("(%f, %f), (%f, %f), (%f, %f)\n",
+            (float)V1->pos.X(), (float)V1->pos.Y(),
+            (float)V2->pos.X(), (float)V2->pos.Y(),
+            (float)V3->pos.X(), (float)V3->pos.Y());
 
     const ProcVert& v1 = *V1;
     const ProcVert& v2 = *V2;
@@ -464,6 +500,11 @@ inline GLuint floatColorToUint(float r, float g, float b, float a)
     return (bi << 24) | (gi << 16) | (ri << 8) | ai;
 }
 
+// debugging
+void pvec(const char* id, Vec4::Arg v)
+{
+    printf("%s: (%f, %f, %f, %f)\n", id, (float)v.X(), (float)v.Y(), (float)v.Z(), (float)v.W());
+}
 
 // these are nicer implemented near their api functions
 void enableOrDisable(GLenum cap, bool val);
@@ -474,3 +515,4 @@ void advanceArrayPtr(const float*& p, const DisplayImplContext::ArrayState& as);
 void processVertTriangles();
 void processVertTristripSetup();
 void processVertTristrip();
+void transformCurrentVert();

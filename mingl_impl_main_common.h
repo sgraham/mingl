@@ -13,7 +13,7 @@ inline void MinGL::ActiveTexture(GLenum texture)
 inline void MinGL::AlphaFunc(GLenum func, GLclampf ref)
 {
     if (!compareFuncAssign(func, ctx.AlphaCompareFunc)) return;
-    ctx.AlphaCompareValue = ref;
+    ctx.AlphaCompareValue = clamp(ref);
 }
 
 // --------------------------------------------------------------------------
@@ -53,7 +53,7 @@ inline void MinGL::Clear(GLbitfield mask)
 // --------------------------------------------------------------------------
 inline void MinGL::ClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
 {
-    ctx.ClearColor = floatColorToUint(red, green, blue, alpha);
+    ctx.ClearColor = floatColorToUint(clamp(red), clamp(green), clamp(blue), clamp(alpha));
 }
 
 // --------------------------------------------------------------------------
@@ -111,8 +111,16 @@ inline void MinGL::DepthFunc(GLenum func)
 
 // --------------------------------------------------------------------------
 inline void MinGL::DepthMask(bool flag) { MINGL_ASSERT(0); }
+
 // --------------------------------------------------------------------------
-inline void MinGL::DepthRange(GLclampf zNear, GLclampf zFar) { MINGL_ASSERT(0); }
+inline void MinGL::DepthRange(GLclampf zNear, GLclampf zFar)
+{
+    zNear = clamp(zNear, 0.f, 1.f);
+    zFar = clamp(zFar, 0.f, 1.f);
+    ctx.Viewport.N = zNear;
+    ctx.Viewport.F = zFar;
+}
+
 // --------------------------------------------------------------------------
 inline void MinGL::Disable(GLenum cap) { MINGL_ASSERT(0); }
 
@@ -170,6 +178,29 @@ inline void MinGL::processVertTristrip()
     ctx.TriPrimGenState.Next = (ctx.TriPrimGenState.Next == &ctx.TriPrimGenState.A)
         ? &ctx.TriPrimGenState.B
         : &ctx.TriPrimGenState.A;
+}
+
+// --------------------------------------------------------------------------
+inline void MinGL::transformCurrentVert()
+{
+    // todo; cache a combined version
+    //pvec("object", ctx.Vert.pos);
+    Vec4 eye = *ctx.CurMatrix[MM_ModelView] * ctx.Vert.pos;
+    //pvec("eye", eye);
+    Vec4 clip = *ctx.CurMatrix[MM_Projection] * eye;
+    //pvec("clip", clip);
+    Vec4 dev = Vec4(clip.X() / clip.W(),
+                    clip.Y() / clip.W(),
+                    clip.Z() / clip.W(),
+                    0.f);
+    //pvec("dev", dev);
+    float f = ctx.Viewport.F;
+    float n = ctx.Viewport.N;
+    ctx.Vert.pos = Vec4(ctx.Viewport.Px2 * dev.X() + ctx.Viewport.Ox,
+                        ctx.Viewport.Py2 * dev.Y() + ctx.Viewport.Oy,
+                        ((f-n)/2.f) * dev.Z() + (n+f)/2.f,
+                        0.f);
+    //pvec("final", ctx.Vert.pos);
 }
 
 // --------------------------------------------------------------------------
@@ -245,6 +276,7 @@ inline void MinGL::DrawArrays(GLenum mode, GLint first, GLsizei count)
         }                                                                   \
         ctx.Vert.pos = getVec4FromArrayPtr(vp, vs);                         \
         advanceArrayPtr(vp, ctx.VertexArray);                               \
+        transformCurrentVert();                                             \
         (this->*vertprocfunc)();                                            \
     }
 
@@ -561,8 +593,14 @@ inline void MinGL::VertexPointer(GLint size, GLenum type, GLsizei stride, const 
 }
 
 // --------------------------------------------------------------------------
-inline void MinGL::Viewport(GLint x, GLint y, GLsizei width, GLsizei height) { MINGL_ASSERT(0); }
-
+inline void MinGL::Viewport(GLint x, GLint y, GLsizei w, GLsizei h)
+{
+    if (w < 0 || h < 0) MINGL_ERR(GL_INVALID_VALUE);
+    ctx.Viewport.Ox = x + w/2;
+    ctx.Viewport.Oy = y + h/2;
+    ctx.Viewport.Px2 = w / 2;
+    ctx.Viewport.Py2 = h / 2;
+}
 
 // --------------------------------------------------------------------------
 inline bool MinGL::compareFuncAssign(GLenum func, CompareFuncE& into)

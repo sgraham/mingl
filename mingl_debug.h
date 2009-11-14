@@ -7,35 +7,69 @@
 #ifndef INCLUDED_mingl_H
 #define INCLUDED_mingl_H
 
-// -----------------------------------------------------------------------
-// Please see license and copyright information at the end of this file.
-// -----------------------------------------------------------------------
+/*
 
-// -----------------------------------------------------------------------
-// "mingl" is a minimal graphics/demo library.
-//
-// Its goals are definitely not to be fast, take advantage of fancy hardware
-// features, or to show off the latest neat effects.
-//
-// Instead, its goals are to be servicable to draw simple dianostic scenes on
-// many different platforms, while being distributed as merely one C++ header
-// file, not requiring any configuration, and not having any external
-// dependencies other than the standard platform libraries.
-//
-// The API of mingl's graphics is modelled after OpenGL ES 1.0. mingl expects
-// to have a floating point unit though, and drops all the fixed-related API
-// functions and types from the ES spec. While MinGL is definitely _not_ a
-// certified implementation of the OpenGL ES specification, its goal is to
-// conform to that specification nonetheless (again, minus the fixed point
-// functions and types).
-//
-// In addition, there is a simple interface for demo-type behaviour of setting
-// up a rendering context, basic user input, and basic camera controls. It is
-// completely ignorable though, if you're only interested in the 'GL' part.
-//
-// A minimal application is simply:
-//
-#if 0
+-----------------------------------------------------------------------------
+
+          `7MMM.     ,MMF'  db               .g8"""bgd `7MMF'
+            MMMb    dPMM                   .dP'     `M   MM
+            M YM   ,M MM  `7MM  `7MMpMMMb. dM'       `   MM
+            M  Mb  M' MM    MM    MM    MM MM            MM
+            M  YM.P'  MM    MM    MM    MM MM.    `7MMF' MM      ,
+            M  `YM'   MM    MM    MM    MM `Mb.     MM   MM     ,M
+          .JML. `'  .JMML..JMML..JMML  JMML. `"bmmmdPY .JMMmmmmMMM
+
+-----------------------------------------------------------------------------
+
+MinGL is Copyright © 2009 Scott Graham <scott.mingl@h4ck3r.net>. Portions of
+this software are based on the PixelToaster Framebuffer Library, which is
+Copyright © 2004-2007 Glenn Fiedler <gaffer@gaffer.org>. All code is licensed
+under the following license:
+
+    This software is provided 'as-is', without any express or implied
+    warranty.  In no event will the authors be held liable for any damages
+    arising from the use of this software.
+
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
+
+    1. The origin of this software must not be misrepresented; you must not
+        claim that you wrote the original software. If you use this software
+        in a product, an acknowledgment in the product documentation would be
+        appreciated but is not required.
+
+    2. Altered source versions must be plainly marked as such, and must not be
+        misrepresented as being the original software.
+
+    3. This notice may not be removed or altered from any source distribution.
+
+-----------------------------------------------------------------------------
+
+MinGL is a minimal graphics/demo library.
+
+Its goals definitely do not include being the fastest, taking the best
+advantange of fancy hardware features, or showing off the latest neat
+rendering effects.
+
+Instead, its goals are to be servicable to draw simple diagnostic scenes on
+many different platforms, while being distributed as merely one C++ header
+file, not requiring any configuration, and not having any external
+dependencies other than the standard platform libraries.
+
+The API of MinGL's graphics is modelled closely after OpenGL ES 1.0. MinGL
+expects to have a floating point unit though, and drops all the fixed-related
+API functions and types from the ES spec. While MinGL is definitely _not_ a
+certified implementation of the OpenGL ES specification, it strives to conform
+to that specification nonetheless (again, minus the fixed point functions and
+types).
+
+In addition to the graphics API there is some additional functionality to
+handle setting up rendering context, handling basic user input, basic camera
+controls, etc. This functionality is completely ignorable though, if you're
+only interested in the 'GL' part.
+
+A minimal application is simply:
 
     #include "mingl.h"
     using namespace mingl;
@@ -51,32 +85,39 @@
         }
     }
 
-#endif
-//
-// You might also find it more pleasant to derive from MinGL and avoid the
-// "gl." prefix on calling API functions.
-//
-// MinGL is intended to work on Windows (DirectDraw), Linux (X11), OSX,
-// Xbox360, PS3, and Wii. It doesn't work on all these platforms yet though.
-//
-// Platform-specific notes:
-//
-// - Under X11, you will need to add "-lX11" to your link line. 
-//
-// - For GCC on x86, you'll need to enable vector instructions; add "-msse" to
-// the compiler command line.
-//
-// If you know of reasonable ways to avoid any of these platform-specific
-// configuration requirements, please let me know.
-//
-// If you wish to edit the code, you should grab the original from source
-// control, rather than editing mingl.h, as mingl.h is bundled together for
-// distribution purposes.
-//
-//
-// Scott Graham <scott.mingl@h4ck3r.net>
-//
+You might also find it more pleasant to derive from MinGL and avoid the "gl."
+prefix on calling API functions. MinGL drops the "gl" prefix on function names
+and the type/count specifiers (e.g. "3fv") that are common in "C"
+implementations of OpenGL. Putting the API functions in an object allows for
+multiple active contexts which could be useful for threaded, offline
+rendering. If you would prefer source compatibility with standard OpenGL C
+code, but only one context, you can define the preprocessor symbol
+MINGL_STANDARD_OPENGL_NAMES before including mingl.h. You must also insert a
+call to MINGL_IMPLICIT_GLOBAL_CONTEXT() into one translation unit (i.e. a .cpp
+file).
 
+MinGL is intended to work on Windows (DirectDraw), Linux (X11), OSX, Xbox360,
+PS3, and Wii. It doesn't work on all these platforms yet though.
+
+Platform-specific notes:
+
+- Under X11, you will need to add "-lX11" to your link line. 
+
+- For GCC on x86, you'll need to enable vector instructions; add "-msse" to
+the compiler command line.
+
+If you know of reasonable ways to avoid any of these platform-specific
+configuration requirements, please let me know.
+
+If you wish to edit the code, you should grab the original from source
+control, rather than editing mingl.h, as mingl.h is bundled together for
+distribution purposes.
+
+Scott Graham <scott.mingl@h4ck3r.net>
+
+-----------------------------------------------------------------------------
+
+*/
 
 namespace mingl
 {

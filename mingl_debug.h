@@ -46,11 +46,16 @@ under the following license:
 
 -----------------------------------------------------------------------------
 
+
 MinGL is a minimal graphics/demo library.
 
-Its goals definitely do not include being the fastest, taking the best
-advantange of fancy hardware features, or showing off the latest neat
-rendering effects.
+
+About
+-----
+
+MinGL's goals definitely do not include being the fastest graphics library,
+taking the best advantange of fancy hardware features, or showing off the
+latest neat rendering effects.
 
 Instead, its goals are to be servicable to draw simple diagnostic scenes on
 many different platforms, while being distributed as merely one C++ header
@@ -69,6 +74,10 @@ handle setting up rendering context, handling basic user input, basic camera
 controls, etc. This functionality is completely ignorable though, if you're
 only interested in the 'GL' part.
 
+
+Simple example
+--------------
+
 A minimal application is simply:
 
     #include "mingl.h"
@@ -86,28 +95,46 @@ A minimal application is simply:
     }
 
 You might also find it more pleasant to derive from MinGL and avoid the "gl."
-prefix on calling API functions. MinGL drops the "gl" prefix on function names
-and the type/count specifiers (e.g. "3fv") that are common in "C"
-implementations of OpenGL. Putting the API functions in an object allows for
-multiple active contexts which could be useful for threaded, offline
-rendering. If you would prefer source compatibility with standard OpenGL C
-code, but only one context, you can define the preprocessor symbol
+prefix on calling API functions.
+
+
+C-style API names
+-----------------
+
+MinGL drops the "gl" prefix on function names and the type/count specifiers
+(e.g. "3fv") that are common in "C" implementations of OpenGL. Putting the API
+functions in an object allows for multiple active contexts which could be
+useful for threaded, offline rendering.
+
+If you would prefer source compatibility with standard OpenGL C code, but only
+one context, you can define the preprocessor symbol
 MINGL_STANDARD_OPENGL_NAMES before including mingl.h. You must also insert a
-call to MINGL_IMPLICIT_GLOBAL_CONTEXT() into one translation unit (i.e. a .cpp
-file).
+MINGL_DEFINE_IMPLICIT_GLOBAL_CONTEXT() into one translation unit at global
+scope, i.e. a .cpp file. With the MINGL_STANDARD_OPENGL_NAMES define enabled,
+'fake' versions of fixed-point functions will also exist: they simply scale,
+convert, and call the equivalent floating point routine. The standard-named
+functions will still be in the mingl namespace.
+
+
+Platform notes
+--------------
 
 MinGL is intended to work on Windows (DirectDraw), Linux (X11), OSX, Xbox360,
 PS3, and Wii. It doesn't work on all these platforms yet though.
 
 Platform-specific notes:
 
-- Under X11, you will need to add "-lX11" to your link line. 
+- Under X11, you will need to add "-lX11" to your link line.
 
 - For GCC on x86, you'll need to enable vector instructions; add "-msse" to
-the compiler command line.
+the compiler command line. // todo; profile to evaluate vs. hassle
 
 If you know of reasonable ways to avoid any of these platform-specific
 configuration requirements, please let me know.
+
+
+Patches
+-------
 
 If you wish to edit the code, you should grab the original from source
 control, rather than editing mingl.h, as mingl.h is bundled together for
@@ -122,6 +149,7 @@ Scott Graham <scott.mingl@h4ck3r.net>
 namespace mingl
 {
     typedef unsigned int GLenum;
+    typedef bool GLboolean;
     typedef unsigned int GLbitfield;
     typedef int GLint;
     typedef int GLsizei;
@@ -129,8 +157,10 @@ namespace mingl
     typedef unsigned int GLuint;
     typedef float GLfloat;
     typedef float GLclampf;
-    typedef bool GLboolean;
     typedef void GLvoid;
+
+    typedef int GLfixed;
+    typedef int GLclampx;
 }
 
 #include <new> // we need to override operator new/delete to ensure alignment
@@ -763,7 +793,7 @@ class MinGL
         void Frustum(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar);
         void GenTextures(GLsizei n, GLuint *textures);
         GLenum GetError();
-        void GetIntegerv(GLenum pname, GLint *params);
+        void GetInteger(GLenum pname, GLint *params);
         const GLubyte* GetString(GLenum name);
         void Hint(GLenum target, GLenum mode);
         void LightModel(GLenum pname, GLfloat param);
@@ -817,6 +847,8 @@ class MinGL
 #include "mingl_impl_main_common.h"
 
 #include "mingl_impl_main_unix.h"
+
+#include "mingl_impl_c_style_names.h"
 
 // todo; do we want to #undef the MINGL_... we set? or all the MINGL_ that we
 // know about? or do nothing?

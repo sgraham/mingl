@@ -1,9 +1,17 @@
 #ifdef MINGL_STANDARD_OPENGL_NAMES
 
+#define MINGL_DEFINE_IMPLICIT_GLOBAL_CONTEXT() namespace mingl { MinGL* MinGLGlobalContext; }
+
 namespace mingl
 {
 extern MinGL* MinGLGlobalContext;
-inline void glActiveTexture (GLenum texture) { MinGLGlobalContext.ActiveTexture(texture); }
+inline float _x2f(GLint fixed)
+{
+    double tmp = fixed;
+    tmp /= 65536.0;
+    return (float)tmp;
+}
+inline void glActiveTexture (GLenum texture) { MinGLGlobalContext->ActiveTexture(texture); }
 inline void glAlphaFunc (GLenum func, GLclampf ref) { MinGLGlobalContext->AlphaFunc(func, ref); }
 inline void glAlphaFuncx (GLenum func, GLclampx ref) { MinGLGlobalContext->AlphaFunc(func, _x2f(ref)); }
 inline void glBindTexture (GLenum target, GLuint texture) { MinGLGlobalContext->BindTexture(target, texture); }
@@ -43,7 +51,7 @@ inline void glFogx (GLenum pname, GLfixed param) { MinGLGlobalContext->Fog(pname
 inline void glFogxv (GLenum pname, const GLfixed *params)
 {
     float conv[4];
-    for (int i = 0; i < pname == GL_FOG_COLOR ? 4 : 1; ++i) conv[i] = _x2f(params[i]);
+    for (size_t i = 0; i < (pname == GL_FOG_COLOR) ? 4 : 1; ++i) conv[i] = _x2f(params[i]);
     MinGLGlobalContext->Fog(pname, conv);
 }
 inline void glFrontFace (GLenum mode) { MinGLGlobalContext->FrontFace(mode); }
@@ -57,10 +65,10 @@ inline void glHint (GLenum target, GLenum mode) { MinGLGlobalContext->Hint(targe
 inline void glLightModelf (GLenum pname, GLfloat param) { MinGLGlobalContext->LightModel(pname, param); }
 inline void glLightModelfv (GLenum pname, const GLfloat *params) { MinGLGlobalContext->LightModel(pname, params); }
 inline void glLightModelx (GLenum pname, GLfixed param) { MinGLGlobalContext->LightModel(pname, _x2f(param)); }
-inline void glLightModelxv (GLenum pname, const GLfixed *params);
+inline void glLightModelxv (GLenum pname, const GLfixed *params)
 {
     float conv[4];
-    for (int i = 0; i < pname == GL_LIGHT_MODEL_AMBIENT ? 4 : 1; ++i) conv[i] = _x2f(params[i]);
+    for (size_t i = 0; i < (pname == GL_LIGHT_MODEL_AMBIENT) ? 4 : 1; ++i) conv[i] = _x2f(params[i]);
     MinGLGlobalContext->LightModel(pname, conv);
 }
 inline void glLightf (GLenum light, GLenum pname, GLfloat param) { MinGLGlobalContext->Light(light, pname, param); }
@@ -90,7 +98,7 @@ inline void glLightxv (GLenum light, GLenum pname, const GLfixed *params)
 inline void glLineWidth (GLfloat width) { MinGLGlobalContext->LineWidth(width); }
 inline void glLineWidthx (GLfixed width) { MinGLGlobalContext->LineWidth(_x2f(width)); }
 inline void glLoadIdentity () { MinGLGlobalContext->LoadIdentity(); }
-inline void glLoadMatrixf (const GLfloat *m); { MinGLGlobalContext->LoadMatrix(m); }
+inline void glLoadMatrixf (const GLfloat *m) { MinGLGlobalContext->LoadMatrix(m); }
 inline void glLoadMatrixx (const GLfixed *m)
 {
     float conv[16];
@@ -138,13 +146,13 @@ inline void glPixelStorei (GLenum pname, GLint param) { MinGLGlobalContext->Pixe
 inline void glPointSize (GLfloat size) { MinGLGlobalContext->PointSize(size); }
 inline void glPointSizex (GLfixed size) { MinGLGlobalContext->PointSize(_x2f(size)); }
 inline void glPolygonOffset (GLfloat factor, GLfloat units) { MinGLGlobalContext->PolygonOffset(factor, units); }
-inline void glPolygonOffsetx (GLfixed factor, GLfixed units); { MinGLGlobalContext->PolygonOffset(factor, _x2f(units)); }
+inline void glPolygonOffsetx (GLfixed factor, GLfixed units) { MinGLGlobalContext->PolygonOffset(factor, _x2f(units)); }
 inline void glPopMatrix (void) { MinGLGlobalContext->PopMatrix(); }
 inline void glPushMatrix (void) { MinGLGlobalContext->PushMatrix(); }
 inline void glReadPixels (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels) { MinGLGlobalContext->ReadPixels(x, y, width, height, format, type, pixels); }
 inline void glRotatef (GLfloat angle, GLfloat x, GLfloat y, GLfloat z) { MinGLGlobalContext->Rotate(angle, x, y, z); }
 inline void glRotatex (GLfixed angle, GLfixed x, GLfixed y, GLfixed z) { MinGLGlobalContext->Rotate(_x2f(angle), _x2f(x), _x2f(y), _x2f(z)); }
-inline void glSampleCoverage (GLclampf value, GLboolean invert); { MinGLGlobalContext->SampleCoverage(value, invert); }
+inline void glSampleCoverage (GLclampf value, GLboolean invert) { MinGLGlobalContext->SampleCoverage(value, invert); }
 inline void glSampleCoveragex (GLclampx value, GLboolean invert) { MinGLGlobalContext->SampleCoverage(_x2f(value), invert); }
 inline void glScalef (GLfloat x, GLfloat y, GLfloat z) { MinGLGlobalContext->Scale(x, y, z); }
 inline void glScalex (GLfixed x, GLfixed y, GLfixed z) { MinGLGlobalContext->Scale(_x2f(x), _x2f(y), _x2f(z)); }
@@ -155,16 +163,16 @@ inline void glStencilMask (GLuint mask) { MinGLGlobalContext->StencilMask(mask);
 inline void glStencilOp (GLenum fail, GLenum zfail, GLenum zpass) { MinGLGlobalContext->StencilOp(fail, zfail, zpass); }
 inline void glTexCoordPointer (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) { MinGLGlobalContext->TexCoordPointer(size, type, stride, pointer); }
 inline void glTexEnvf (GLenum target, GLenum pname, GLfloat param) { MinGLGlobalContext->TexEnv(target, pname, param); }
-inline void glTexEnvfv (GLenum target, GLenum pname, const GLfloat *params) { MinGLGlobalContext->TexEnv(target, name, params); }
-inline void glTexEnvx (GLenum target, GLenum pname, GLfixed param) { MinGLGlobalContext->TexEnv(target, name, _x2f(param)); }
+inline void glTexEnvfv (GLenum target, GLenum pname, const GLfloat *params) { MinGLGlobalContext->TexEnv(target, pname, params); }
+inline void glTexEnvx (GLenum target, GLenum pname, GLfixed param) { MinGLGlobalContext->TexEnv(target, pname, _x2f(param)); }
 inline void glTexEnvxv (GLenum target, GLenum pname, const GLfixed *params)
 {
     MINGL_ASSERT(false && "todo;");
 }
 inline void glTexImage2D (GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) { MinGLGlobalContext->TexImage2D(target, level, internalformat, width, height, border, format, type, pixels); }
-inline void glTexParameterf (GLenum target, GLenum pname, GLfloat param) { MinGLGlobalContext->TexParameter(target, name, param); }
+inline void glTexParameterf (GLenum target, GLenum pname, GLfloat param) { MinGLGlobalContext->TexParameter(target, pname, param); }
 inline void glTexParameterx (GLenum target, GLenum pname, GLfixed param) { MinGLGlobalContext->TexParameter(target, pname, _x2f(param)); }
-inline void glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) { MinGLGlobalContext->TexSubImage2D(target, level, xoffset, yoffset, width, height format, type, pixels); }
+inline void glTexSubImage2D (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) { MinGLGlobalContext->TexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels); }
 inline void glTranslatef (GLfloat x, GLfloat y, GLfloat z) { MinGLGlobalContext->Translate(x, y, z); }
 inline void glTranslatex (GLfixed x, GLfixed y, GLfixed z) { MinGLGlobalContext->Translate(_x2f(x), _x2f(y), _x2f(z)); }
 inline void glVertexPointer (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) { MinGLGlobalContext->VertexPointer(size, type, stride, pointer); }

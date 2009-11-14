@@ -80,8 +80,8 @@ Simple example
 
 A minimal application is simply:
 
-    #include "mingl.h"
-    using namespace mingl;
+#include "mingl.h"
+using namespace mingl;
 
     int main()
     {
@@ -111,9 +111,13 @@ one context, you can define the preprocessor symbol
 MINGL_STANDARD_OPENGL_NAMES before including mingl.h. You must also insert a
 MINGL_DEFINE_IMPLICIT_GLOBAL_CONTEXT() into one translation unit at global
 scope, i.e. a .cpp file. With the MINGL_STANDARD_OPENGL_NAMES define enabled,
-'fake' versions of fixed-point functions will also exist: they simply scale,
+fake versions of fixed-point functions will also exist: they simply scale,
 convert, and call the equivalent floating point routine. The standard-named
 functions will still be in the mingl namespace.
+
+The global context will be called mingl::MinGLGlobalContext, and you should
+'new' a MinGL object and assign to that variable when you want to create the
+window and start rendering.
 
 
 Platform notes
@@ -127,7 +131,7 @@ Platform-specific notes:
 - Under X11, you will need to add "-lX11" to your link line.
 
 - For GCC on x86, you'll need to enable vector instructions; add "-msse" to
-the compiler command line. // todo; profile to evaluate vs. hassle
+the compiler command line. TODO make this optional and suggest+detect instead
 
 If you know of reasonable ways to avoid any of these platform-specific
 configuration requirements, please let me know.

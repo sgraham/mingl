@@ -377,7 +377,7 @@ inline GLenum MinGL::GetError()
 }
 
 // --------------------------------------------------------------------------
-inline void MinGL::GetIntegerv(GLenum pname, GLint *params) { MINGL_ASSERT(0); }
+inline void MinGL::GetInteger(GLenum pname, GLint *params) { MINGL_ASSERT(0); }
 
 // --------------------------------------------------------------------------
 inline const GLubyte* MinGL::GetString(GLenum name)

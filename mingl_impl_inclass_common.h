@@ -339,10 +339,10 @@ inline void renderTriangleGouraud(const ProcVert* V1, const ProcVert* V2, const 
     if (V2->pos.Y() > V3->pos.Y()) swap(V2, V3);
     if (V1->pos.Y() > V2->pos.Y()) swap(V1, V2);
 
-    printf("(%f, %f), (%f, %f), (%f, %f)\n",
-            (float)V1->pos.X(), (float)V1->pos.Y(),
-            (float)V2->pos.X(), (float)V2->pos.Y(),
-            (float)V3->pos.X(), (float)V3->pos.Y());
+    //printf("(%f, %f), (%f, %f), (%f, %f)\n",
+            //(float)V1->pos.X(), (float)V1->pos.Y(),
+            //(float)V2->pos.X(), (float)V2->pos.Y(),
+            //(float)V3->pos.X(), (float)V3->pos.Y());
 
     const ProcVert& v1 = *V1;
     const ProcVert& v2 = *V2;

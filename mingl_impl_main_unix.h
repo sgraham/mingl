@@ -137,6 +137,8 @@ inline void MinGL::SwapBuffers()
     ::XPutImage(mDisplay, mWindow, mGC, mImage, 0, 0, 0, 0, mWidth, mHeight);
     ::XFlush(mDisplay);
 
+    mImage->data = 0;
+
     pumpEvents();
 }
 

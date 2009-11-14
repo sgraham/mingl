@@ -36,6 +36,12 @@ struct DisplayImplContext
         Funcs.Tri = &MinGL::renderTriangleGouraud;
     }
 
+    ~DisplayImplContext()
+    {
+        MINGL_FREE_MEMORY(Buf.C);
+        MINGL_FREE_MEMORY(Buf.Z);
+    }
+
     void Init(MinGL* self, int w, int h)
     {
         Buf.Z = reinterpret_cast<float*>(MINGL_ALLOCATE_MEMORY(sizeof(float) * w * h));
@@ -52,12 +58,6 @@ struct DisplayImplContext
         self->LoadIdentity();
         self->MatrixMode(GL_TEXTURE);
         self->LoadIdentity();
-    }
-
-    ~DisplayImplContext()
-    {
-        MINGL_FREE_MEMORY(Buf.C);
-        MINGL_FREE_MEMORY(Buf.Z);
     }
 
     MatrixModeE MatrixMode;
@@ -109,6 +109,7 @@ struct DisplayImplContext
         ProcVert B;
         ProcVert* Next;
         bool DidFirst;
+        int Counter;
     };
     TrianglePrimitiveGenerateState TriPrimGenState;
 

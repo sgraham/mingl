@@ -158,7 +158,22 @@ inline void MinGL::advanceArrayPtr(const float*& p, const DisplayImplContext::Ar
 // --------------------------------------------------------------------------
 inline void MinGL::processVertTriangles()
 {
-    MINGL_ASSERT(false);
+    if (ctx.TriPrimGenState.Counter == 0)
+    {
+        ctx.TriPrimGenState.A = ctx.Vert;
+        ctx.TriPrimGenState.Counter = 1;
+    }
+    else if (ctx.TriPrimGenState.Counter == 1)
+    {
+        ctx.TriPrimGenState.B = ctx.Vert;
+        ctx.TriPrimGenState.Counter = 2;
+    }
+    else
+    {
+        MINGL_ASSERT(ctx.TriPrimGenState.Counter == 2);
+        (this->*ctx.Funcs.Tri)(&ctx.TriPrimGenState.A, &ctx.TriPrimGenState.B, &ctx.Vert);
+        ctx.TriPrimGenState.Counter = 0;
+    }
 }
 
 // --------------------------------------------------------------------------
@@ -237,6 +252,7 @@ inline void MinGL::DrawArrays(GLenum mode, GLint first, GLsizei count)
     {
         case GL_TRIANGLES:
             mainVertProc = &MinGL::processVertTriangles;
+            ctx.TriPrimGenState.Counter = 0;
             break;
         case GL_TRIANGLE_STRIP:
             initialVertProc = &MinGL::processVertTristripSetup;

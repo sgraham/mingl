@@ -51,9 +51,9 @@ inline Vec4 operator*(Mat44::Arg m, Vec4::Arg v)
 
 inline Mat44& operator*=(Mat44& a, Mat44::Arg b)
 {
-    a = Mat44(b * a.c1,
-              b * a.c2,
-              b * a.c3,
-              b * a.c4);
+    a = Mat44(a * b.c1,
+              a * b.c2,
+              a * b.c3,
+              a * b.c4);
     return a;
 }

@@ -34,20 +34,22 @@ def tex():
     cmd("xxd -i testtex.rgba testtex.cpp")
     os.unlink("testtex.rgba")
 
-def dist():
+def dist(withLines=False):
     """build separate source files into one combined header for easy distribution"""
     if not os.path.exists("dist"): os.mkdir("dist")
     print ". building combined mingl.h"
     out = open("dist/mingl.h", "w")
     def process(fn):
-        print >>out, '#line 1 "%s"' % fn
+        if withLines:
+            print >>out, '#line 1 "%s"' % fn
         curline = 1
         for line in open(fn).readlines():
             if line.startswith("//STRIP"): continue
             mo = re.search('#include "(.*)"', line)
             if mo and mo.group(1) != "mingl.h": # avoid example code include
                 process(mo.group(1))
-                print >>out, '#line %d "%s"' % (curline, fn)
+                if withLines:
+                    print >>out, '#line %d "%s"' % (curline, fn)
             else:
                 print >>out, line,
                 #print >>out, "/* mingl.h, edit original instead */", line,
@@ -56,7 +58,7 @@ def dist():
     out.close()
 
 def ex(num):
-    dist()
+    dist(withLines=True)
     buildAndRun(["examples/ex%02d" % int(num)])
 
 def main():

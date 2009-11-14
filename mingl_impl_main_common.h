@@ -136,7 +136,7 @@ inline Vec4 MinGL::getVec4FromArrayPtr(const float* p, const int size)
 {
     MINGL_ASSERT(size == 2 || size == 3 || size == 4);
     if (size == 2)
-        return Vec4(p[0], p[1], -100.f, 1.f); // todo; this should be 0.f, 1.f, but because were not xforming yet that'd be /0
+        return Vec4(p[0], p[1], 0.f, 1.f);
     else if (size == 3)
         return Vec4(p[0], p[1], p[2], 1.f);
     else if (size == 4)
@@ -211,8 +211,8 @@ inline void MinGL::transformCurrentVert()
     //pvec("dev", dev);
     float f = ctx.Viewport.F;
     float n = ctx.Viewport.N;
-    ctx.Vert.pos = Vec4(ctx.Viewport.Px2 * dev.X() + ctx.Viewport.Ox,
-                        ctx.Viewport.Py2 * dev.Y() + ctx.Viewport.Oy,
+    ctx.Vert.pos = Vec4((ctx.Viewport.Px/2) * dev.X() + ctx.Viewport.Ox,
+                        -((ctx.Viewport.Py/2) * dev.Y() + ctx.Viewport.Oy) + ctx.Viewport.Py, // todo; we flip here rather than in rasterize. problematic?
                         ((f-n)/2.f) * dev.Z() + (n+f)/2.f,
                         0.f);
     //pvec("final", ctx.Vert.pos);
@@ -354,7 +354,7 @@ inline void MinGL::Frustum(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n
             || n ==f)
         MINGL_ERR(GL_INVALID_VALUE);
 
-    *ctx.CurMatrix[ctx.MatrixMode] *= Mat44(
+    *ctx.CurMatrix[ctx.CurMatrixMode] *= Mat44(
             (2*n)/(r-l), 0.f, (r+l)/(r-l), 0.f,
             0.f, (2*n)/(t-b), (t+b)/(t-b), 0.f,
             0.f, 0.f, -((f+n)/(f-n)), -((2*f*n)/(f-n)),
@@ -408,7 +408,7 @@ inline void MinGL::LineWidth(GLfloat width) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
 inline void MinGL::LoadIdentity()
 {
-    *ctx.CurMatrix[ctx.MatrixMode] = Mat44(
+    *ctx.CurMatrix[ctx.CurMatrixMode] = Mat44(
             1.f, 0.f, 0.f, 0.f,
             0.f, 1.f, 0.f, 0.f,
             0.f, 0.f, 1.f, 0.f,
@@ -418,7 +418,7 @@ inline void MinGL::LoadIdentity()
 // --------------------------------------------------------------------------
 inline void MinGL::LoadMatrix(const GLfloat *m)
 {
-    *ctx.CurMatrix[ctx.MatrixMode] = Mat44(m);
+    *ctx.CurMatrix[ctx.CurMatrixMode] = Mat44(m);
 }
 
 // --------------------------------------------------------------------------
@@ -433,9 +433,9 @@ inline void MinGL::MatrixMode(GLenum mode)
 {
     switch (mode)
     {
-        case GL_MODELVIEW: ctx.MatrixMode = MM_ModelView; break;
-        case GL_PROJECTION: ctx.MatrixMode = MM_Projection; break;
-        case GL_TEXTURE: ctx.MatrixMode = MM_Texture; break;
+        case GL_MODELVIEW: ctx.CurMatrixMode = MM_ModelView; break;
+        case GL_PROJECTION: ctx.CurMatrixMode = MM_Projection; break;
+        case GL_TEXTURE: ctx.CurMatrixMode = MM_Texture; break;
         default: MINGL_ERR(GL_INVALID_ENUM);
     }
 }
@@ -444,7 +444,7 @@ inline void MinGL::MatrixMode(GLenum mode)
 inline void MinGL::MultMatrix(const GLfloat *m)
 {
     Mat44 mm(m);
-    *ctx.CurMatrix[ctx.MatrixMode] *= mm;
+    *ctx.CurMatrix[ctx.CurMatrixMode] *= mm;
 }
 
 // --------------------------------------------------------------------------
@@ -472,7 +472,7 @@ inline void MinGL::Ortho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, 
             || n ==f)
         MINGL_ERR(GL_INVALID_VALUE);
 
-    *ctx.CurMatrix[ctx.MatrixMode] *= Mat44(
+    *ctx.CurMatrix[ctx.CurMatrixMode] *= Mat44(
             2.f/(r-l), 0.f, 0.f, -((r+l)/(r-l)),
             0.f, 2.f/(t-b), 0.f, -((t+b)/(t-b)),
             0.f, 0.f, -(2.f/(f-n)), -((f+n)/(f-n)),
@@ -485,10 +485,24 @@ inline void MinGL::PixelStore(GLenum pname, GLint param) { MINGL_ASSERT(0); }
 inline void MinGL::PointSize(GLfloat size) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
 inline void MinGL::PolygonOffset(GLfloat factor, GLfloat units) { MINGL_ASSERT(0); }
+
 // --------------------------------------------------------------------------
-inline void MinGL::PopMatrix() { MINGL_ASSERT(0); }
+inline void MinGL::PopMatrix()
+{
+    if (ctx.CurMatrix[ctx.CurMatrixMode] == &ctx.MatrixStack[ctx.CurMatrixMode][0])
+        MINGL_ERR(GL_STACK_UNDERFLOW);
+    ctx.CurMatrix[ctx.CurMatrixMode] -= 1;
+}
+
 // --------------------------------------------------------------------------
-inline void MinGL::PushMatrix() { MINGL_ASSERT(0); }
+inline void MinGL::PushMatrix()
+{
+    if (ctx.CurMatrix[ctx.CurMatrixMode] == &ctx.MatrixStack[ctx.CurMatrixMode][MaxMatrixStackDepth - 1])
+        MINGL_ERR(GL_STACK_OVERFLOW);
+    *(ctx.CurMatrix[ctx.CurMatrixMode] + 1) = *ctx.CurMatrix[ctx.CurMatrixMode];
+    ctx.CurMatrix[ctx.CurMatrixMode] += 1;
+}
+
 // --------------------------------------------------------------------------
 inline void MinGL::ReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels) { MINGL_ASSERT(0); }
 
@@ -505,16 +519,16 @@ inline void MinGL::Rotate(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 
     Mat44 tmp(
             x*x*(1-c)+c,   x*y*(1-c)-z*s, x*z*(1-c)+y*s, 0.f,
-            x*y*(1-c)+z*s, y*y*(1-c)+c,   y*z*(1-c)*x*s, 0.f,
+            x*y*(1-c)+z*s, y*y*(1-c)+c,   y*z*(1-c)-x*s, 0.f,
             x*z*(1-c)-y*s, y*z*(1-c)+x*s, z*z*(1-c)+c,   0.f,
             0.f,           0.f,           0.f,           1.f);
-    *ctx.CurMatrix[ctx.MatrixMode] *= tmp;
+    *ctx.CurMatrix[ctx.CurMatrixMode] *= tmp;
 }
 
 // --------------------------------------------------------------------------
 inline void MinGL::Scale(GLfloat x, GLfloat y, GLfloat z)
 {
-    *ctx.CurMatrix[ctx.MatrixMode] *= Mat44(
+    *ctx.CurMatrix[ctx.CurMatrixMode] *= Mat44(
             x, 0.f, 0.f, 0.f,
             0.f, y, 0.f, 0.f,
             0.f, 0.f, z, 0.f,
@@ -524,7 +538,10 @@ inline void MinGL::Scale(GLfloat x, GLfloat y, GLfloat z)
 // --------------------------------------------------------------------------
 inline void MinGL::Scissor(GLint x, GLint y, GLsizei width, GLsizei height) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
-inline void MinGL::ShadeModel(GLenum mode) { MINGL_ASSERT(0); }
+inline void MinGL::ShadeModel(GLenum mode)
+{
+    // todo;
+}
 
 // --------------------------------------------------------------------------
 inline void MinGL::StencilFunc(GLenum func, GLint ref, GLuint mask)
@@ -590,11 +607,11 @@ inline void MinGL::TexSubImage2D(GLenum target, GLint level, GLint xoffset, GLin
 // --------------------------------------------------------------------------
 inline void MinGL::Translate(GLfloat x, GLfloat y, GLfloat z)
 {
-    *ctx.CurMatrix[ctx.MatrixMode] *= Mat44(
-            0.f, 0.f, 0.f, x,
-            0.f, 0.f, 0.f, y,
-            0.f, 0.f, 0.f, z,
-            0.f, 0.f, 0., 1.f);
+    *ctx.CurMatrix[ctx.CurMatrixMode] *= Mat44(
+            1.f, 0.f, 0.f, x,
+            0.f, 1.f, 0.f, y,
+            0.f, 0.f, 1.f, z,
+            0.f, 0.f, 0.f, 1.f);
 }
 
 // --------------------------------------------------------------------------
@@ -614,8 +631,8 @@ inline void MinGL::Viewport(GLint x, GLint y, GLsizei w, GLsizei h)
     if (w < 0 || h < 0) MINGL_ERR(GL_INVALID_VALUE);
     ctx.Viewport.Ox = x + w/2;
     ctx.Viewport.Oy = y + h/2;
-    ctx.Viewport.Px2 = w / 2;
-    ctx.Viewport.Py2 = h / 2;
+    ctx.Viewport.Px = w;
+    ctx.Viewport.Py = h;
 }
 
 // --------------------------------------------------------------------------

@@ -70,9 +70,9 @@ to that specification nonetheless (again, minus the fixed point functions and
 types).
 
 In addition to the graphics API there is some additional functionality to
-handle setting up rendering context, handling basic user input, basic camera
-controls, etc. This functionality is completely ignorable though, if you're
-only interested in the 'GL' part.
+handle setting up rendering context, handling basic user input, basic
+"flycam", etc. This extra functionality is completely optional though, if
+you're only interested in the 'GL' part.
 
 
 Simple example
@@ -80,8 +80,8 @@ Simple example
 
 A minimal application is simply:
 
-#include "mingl.h"
-using namespace mingl;
+    #include "mingl.h"
+    using namespace mingl;
 
     int main()
     {
@@ -113,11 +113,13 @@ MINGL_DEFINE_IMPLICIT_GLOBAL_CONTEXT() into one translation unit at global
 scope, i.e. a .cpp file. With the MINGL_STANDARD_OPENGL_NAMES define enabled,
 fake versions of fixed-point functions will also exist: they simply scale,
 convert, and call the equivalent floating point routine. The standard-named
-functions will still be in the mingl namespace.
+functions are still defined in the mingl namespace.
 
 The global context will be called mingl::MinGLGlobalContext, and you should
 'new' a MinGL object and assign to that variable when you want to create the
-window and start rendering.
+window and start rendering. i.e.:
+
+    mingl::MinGLGlobalContext = new MinGL();
 
 
 Platform notes
@@ -167,9 +169,15 @@ namespace mingl
     typedef int GLclampx;
 }
 
+#ifdef _MSC_VER
+    #pragma region PlatformSetup
+#endif
 #include <new> // we need to override operator new/delete to ensure alignment
 #include <stdint.h>
 #include "mingl_impl_setup.h"
+#ifdef _MSC_VER
+    #pragma endregion PlatformSetup
+#endif
 
 namespace mingl
 {
@@ -841,13 +849,22 @@ class MinGL
         void Viewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
     private:
+        #ifdef _MSC_VER
+            #pragma region ImplementionData
+        #endif
         #include "mingl_impl_inclass_common.h"
         #include "mingl_impl_inclass_unix.h"
         EventListener* mListener;
+        #ifdef _MSC_VER
+            #pragma endregion ImplementionData
+        #endif
 };
 
 }
 
+#ifdef _MSC_VER
+    #pragma region Implementation
+#endif
 #include "mingl_impl_main_common.h"
 
 #include "mingl_impl_main_unix.h"
@@ -856,69 +873,9 @@ class MinGL
 
 // todo; do we want to #undef the MINGL_... we set? or all the MINGL_ that we
 // know about? or do nothing?
-
+#ifdef _MSC_VER
+    #pragma endregion Implementation
+    // }}}
 #endif
 
-// -----------------------------------------------------------------------
-// LICENSE INFORMATION FOLLOWS
-// -----------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------
-// Portions of mingl are based on the PixelToaster Framebuffer Library by
-// Glenn Fielder. Its original license follows:
-/*
-    PixelToaster Framebuffer Library.
-
-    Copyright © 2004-2007 Glenn Fiedler
-
-    This software is provided 'as-is', without any express or implied
-    warranty. In no event will the authors be held liable for any damages
-    arising from the use of this software.
-
-    Permission is granted to anyone to use this software for any purpose,
-    including commercial applications, and to alter it and redistribute it
-    freely, subject to the following restrictions:
-
-    1. The origin of this software must not be misrepresented; you must not
-       claim that you wrote the original software. If you use this software
-       in a product, an acknowledgment in the product documentation would be
-       appreciated but is not required.
-
-    2. Altered source versions must be plainly marked as such, and must not be
-       misrepresented as being the original software.
-
-    3. This notice may not be removed or altered from any source distribution.
-
-    Glenn Fiedler
-    gaffer@gaffer.org
-*/
-// -----------------------------------------------------------------------
-
-// -----------------------------------------------------------------------
-// The remainder of mingl is written by Scott Graham. It is also licensed
-// under a 'zlib'-style license, as follows:
-/*
-    Copyright (C) 2009 Scott Graham
-
-    This software is provided 'as-is', without any express or implied
-    warranty.  In no event will the authors be held liable for any damages
-    arising from the use of this software.
-
-    Permission is granted to anyone to use this software for any purpose,
-    including commercial applications, and to alter it and redistribute it
-    freely, subject to the following restrictions:
-
-    1. The origin of this software must not be misrepresented; you must not
-        claim that you wrote the original software. If you use this software
-        in a product, an acknowledgment in the product documentation would be
-        appreciated but is not required.
-
-    2. Altered source versions must be plainly marked as such, and must not be
-        misrepresented as being the original software.
-
-    3. This notice may not be removed or altered from any source distribution.
-
-    Scott Graham
-    scott.mingl@h4ck3r.net
-*/
-// -----------------------------------------------------------------------
+#endif

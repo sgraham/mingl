@@ -60,7 +60,7 @@ struct DisplayImplContext
         self->LoadIdentity();
     }
 
-    MatrixModeE MatrixMode;
+    MatrixModeE CurMatrixMode;
     Mat44 MatrixStack[MM_NumMatrixModes][MaxMatrixStackDepth];
     Mat44* CurMatrix[MM_NumMatrixModes];
 
@@ -131,8 +131,8 @@ struct DisplayImplContext
     {
         int Ox;
         int Oy;
-        int Px2;
-        int Py2;
+        int Px;
+        int Py;
         float F;
         float N;
     };

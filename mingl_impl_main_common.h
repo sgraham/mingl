@@ -223,27 +223,27 @@ inline void MinGL::DrawArrays(GLenum mode, GLint first, GLsizei count)
 {
     if (first < 0) MINGL_ERR(GL_INVALID_VALUE);
 
-    const float* vp = ctx.VertexArray.Data;
     if (!ctx.VertexArray.Enabled)
     {
         // sort of silly, but there's nothing to do.
         return;
     }
     const int vs = ctx.VertexArray.Size;
+    const float* vp = ctx.VertexArray.Data + first * vs;
 
-    const float* np = ctx.NormalArray.Data;
+    const float* np = ctx.NormalArray.Data + first * 3;
     const bool npe = ctx.NormalArray.Enabled;
 
-    const float* cp = ctx.ColorArray.Data;
+    const float* cp = ctx.ColorArray.Data + first * 4;
     const bool cpe = ctx.ColorArray.Enabled;
 
     MINGL_ASSERT(TU_NumTextureUnits == 2);
-    const float* t0p = ctx.TexCoordArray[0].Data;
     const int t0s = ctx.TexCoordArray[0].Size;
+    const float* t0p = ctx.TexCoordArray[0].Data + first * t0s;
     const bool t0pe = ctx.TexCoordArray[0].Enabled;
 
-    const float* t1p = ctx.TexCoordArray[1].Data;
     const int t1s = ctx.TexCoordArray[1].Size;
+    const float* t1p = ctx.TexCoordArray[1].Data + first * t1s;
     const bool t1pe = ctx.TexCoordArray[1].Enabled;
 
     VertProcFn initialVertProc = 0;
@@ -297,12 +297,11 @@ inline void MinGL::DrawArrays(GLenum mode, GLint first, GLsizei count)
     }
 
     GLint i;
-    count *= vs;
-    for (i = first; i < count && i < vs * 2; i += vs)
+    for (i = 0; i < count && i < 2; ++i)
     {
         MINGL_PROCESS_VERT_DRAWARRAYS(initialVertProc)
     }
-    for (; i < count; i += vs)
+    for (; i < count; ++i)
     {
         MINGL_PROCESS_VERT_DRAWARRAYS(mainVertProc)
     }

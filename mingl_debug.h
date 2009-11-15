@@ -142,9 +142,9 @@ configuration requirements, please let me know.
 Patches
 -------
 
-If you wish to edit the code, you should grab the original from source
-control, rather than editing mingl.h, as mingl.h is bundled together for
-distribution purposes.
+If you wish to edit the code, you should grab the original from source control
+via "hg clone https://mingl.googlecode.com/hg/ mingl", rather than editing
+mingl.h, as mingl.h is bundled together for distribution purposes.
 
 Scott Graham <scott.mingl@h4ck3r.net>
 

@@ -636,6 +636,43 @@ inline void MinGL::Viewport(GLint x, GLint y, GLsizei w, GLsizei h)
 }
 
 // --------------------------------------------------------------------------
+inline void MinGL::LookAt(GLfloat eyex, GLfloat eyey, GLfloat eyez, GLfloat centerx, GLfloat centery, GLfloat centerz, GLfloat upx, GLfloat upy, GLfloat upz)
+{
+    // http://www.opengl.org/sdk/docs/man/xhtml/gluLookAt.xml
+    Vec4 eye(eyex, eyey, eyez, 0.f);
+    Vec4 center(centerx, centery, centerz, 0.f);
+    Vec4 up(upx, upy, upz, 0.f);
+
+    Vec4 F = Normalize(center - eye);
+
+    Vec4 S = CrossXYZ(F, Normalize(up));
+    Vec4 U = CrossXYZ(S, F);
+
+    *ctx.CurMatrix[ctx.CurMatrixMode] *= Mat44(S, U, -F, Vec4(0.f, 0.f, 0.f, 1.f));
+    Translate(-eyex, -eyey, -eyez);
+}
+
+// --------------------------------------------------------------------------
+inline void MinGL::Perspective(GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zFar)
+{
+    // http://www.opengl.org/sdk/docs/man/xhtml/gluPerpsective.xml
+    const float dz = zNear - zFar;
+    const float rads = (fovy / 2.f) * M_PI / 180.f;
+    const float tangent = tan(rads);
+
+    if (tangent == 0.f || aspect == 0.f || dz == 0.f)
+        return;
+
+    const float f = 1.f / tangent;
+
+    *ctx.CurMatrix[ctx.CurMatrixMode] *= Mat44(
+            f/aspect, 0.f, 0.f, 0.f,
+            0, f, 0.f, 0.f,
+            0.f, 0.f, (zFar+zNear)/dz, (2.f*zFar*zNear)/dz,
+            0.f, 0.f, -1.f, 0.f);
+}
+
+// --------------------------------------------------------------------------
 inline bool MinGL::compareFuncAssign(GLenum func, CompareFuncE& into)
 {
     switch (func)
@@ -659,14 +696,9 @@ inline void MinGL::enableOrDisable(GLenum cap, bool val)
     {
         case GL_TEXTURE_2D:
             ctx.Texture2DEnabled = val;
-            if (val)
-            {
-                ctx.Funcs.Tri = &MinGL::renderTriangleTex;
-            }
-            else
-            {
-                ctx.Funcs.Tri = &MinGL::renderTriangleGouraud;
-            }
+            break;
+        case GL_DEPTH_TEST:
+            ctx.DepthTestEnabled = val;
             break;
         default:
             MINGL_ASSERT(0);

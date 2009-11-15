@@ -101,21 +101,6 @@ class Vec4
         NativeVectorType v;
 };
 
-inline VecFloat Ceil(VecFloat::Arg a)
-{
-    NativeVectorType ret;
-    MINGL_VECTOR_CEIL(ret, a.v);
-    return VecFloat(ret);
-}
-
-template <int I>
-inline VecFloat Ceil(VecFloatRef<I> a)
-{
-    NativeVectorType ret;
-    MINGL_VECTOR_CEIL(ret, a.rv);
-    return VecFloat(ret);
-}
-
 // BINARY OP +
 inline VecFloat operator+(VecFloat::Arg a, VecFloat::Arg b)
 {
@@ -144,6 +129,13 @@ inline VecFloat operator-(VecFloat::Arg a, VecFloat::Arg b)
     return VecFloat(ret);
 }
 
+inline Vec4 operator-(Vec4::Arg a, Vec4::Arg b)
+{
+    NativeVectorType ret;
+    MINGL_VECTOR_SUBTRACT(ret, a.v, b.v);
+    return Vec4(ret);
+}
+
 template <int I1, int I2>
 inline VecFloat operator-(VecFloatRef<I1> a, VecFloatRef<I2> b)
 {
@@ -154,6 +146,14 @@ inline VecFloat operator-(VecFloatRef<I1> a, VecFloatRef<I2> b)
     MINGL_VECTOR_SPLAT_I(bb, b.rv, I2);
     MINGL_VECTOR_SUBTRACT(ret, aa, bb);
     return VecFloat(ret);
+}
+
+// UNARY -
+inline Vec4 operator-(Vec4::Arg a)
+{
+    NativeVectorType ret;
+    MINGL_VECTOR_NEGATE(ret, a.v);
+    return Vec4(ret);
 }
 
 // OP *
@@ -183,6 +183,15 @@ inline VecFloat operator*(VecFloatRef<I> a, VecFloat b)
     MINGL_VECTOR_SPLAT_I(aa, a.rv, I);
     MINGL_VECTOR_MULTIPLY(ret, aa, b.v);
     return VecFloat(ret);
+}
+
+inline Vec4 operator*(Vec4::Arg a, float b)
+{
+    NativeVectorType ret;
+    NativeVectorType bb;
+    MINGL_VECTOR_SPLAT_1(bb, b);
+    MINGL_VECTOR_MULTIPLY(ret, a.v, bb);
+    return Vec4(ret);
 }
 
 template <int I1, int I2>
@@ -259,4 +268,33 @@ inline bool operator>(VecFloatRef<I1> a, VecFloatRef<I2> b)
     MINGL_VECTOR_SPLAT_I(bb, b.rv, I2);
     MINGL_VECTOR_SCALAR_IS_GREATER(ret, aa, bb);
     return ret;
+}
+
+inline Vec4 Normalize(Vec4::Arg a)
+{
+    // todo; vector version
+    const float recipSqrt = VecFloat(1.f) / sqrt(a.X()*a.X() + a.Y()*a.Y() + a.Z()*a.Z());
+    return a * recipSqrt;
+}
+
+inline Vec4 CrossXYZ(Vec4::Arg a, Vec4::Arg b)
+{
+    NativeVectorType ret;
+    MINGL_VECTOR_CROSS3(ret, a.v, b.v);
+    return Vec4(ret);
+}
+
+inline VecFloat Ceil(VecFloat::Arg a)
+{
+    NativeVectorType ret;
+    MINGL_VECTOR_CEIL(ret, a.v);
+    return VecFloat(ret);
+}
+
+template <int I>
+inline VecFloat Ceil(VecFloatRef<I> a)
+{
+    NativeVectorType ret;
+    MINGL_VECTOR_CEIL(ret, a.rv);
+    return VecFloat(ret);
 }

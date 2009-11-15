@@ -1,1 +1,30 @@
 backtick, some other keys don't work on x11
+
+tri raster variations via #include. bools:
+
+- gouraud
+- tex0
+- tex1
+- depth/color/stencil mask
+- fog
+- texture filtering method:
+    nearest
+    linear
+    nearest_mipmap_nearest
+    linear_mipmap_nearest
+    nearest_mipmap_linear
+    linear_mipmap_linear
+- fragment ops:
+    pixelownership (i.e. don't crash)
+    scissor test
+    alpha test
+    stencil test
+    depth test
+    blending * num blend funcs
+    logic ops * num logic ops (or, you know, assert(0))
+
+that's an awful lot of permutations.
+maybe better to just suck it up and make it run time conditional?
+or generate a few for common cases (gouraud+tex+depth, etc.) and slow-path the rest
+actually generate from py script/template or something?
+

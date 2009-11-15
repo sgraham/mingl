@@ -5,5 +5,8 @@ testtex.cpp
 test
 tags
 mingl.h
+zbuf_*.gray
+zbuf_*.png
+
 syntax: regexp
 ^examples/ex\d\d$

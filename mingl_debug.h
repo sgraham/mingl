@@ -848,6 +848,10 @@ class MinGL
         void VertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
         void Viewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
+        // a couple from glu because they're so commonly used
+        void LookAt(GLfloat eyex, GLfloat eyey, GLfloat eyez, GLfloat centerx, GLfloat centery, GLfloat centerz, GLfloat upx, GLfloat upy, GLfloat upz);
+        void Perspective(GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zFar);
+
     private:
         #ifdef _MSC_VER
             #pragma region ImplementionData

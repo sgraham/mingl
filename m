@@ -59,7 +59,7 @@ def dist(withLines=False):
 
 def ex(num):
     dist(withLines=True)
-    buildAndRun(["examples/ex%02d" % int(num)])
+    buildAndRun(["examples/ex%02d" % int(num), "testtex"])
 
 def main():
     if len(sys.argv) < 2:

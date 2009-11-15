@@ -57,9 +57,52 @@ namespace mingl
     r = _mm_set1_ps(af);                                \
 } while(0)
 
+    
+// todo; this seems horribly complicated
+#define MINGL_VECTOR_DOT(r, v0, v1) do {                \
+    NativeVectorType prod = _mm_mul_ps(v0, v1);         \
+    NativeVectorType b = _mm_shuffle_ps(prod, prod, _MM_SHUFFLE(1, 1, 1, 1)); \
+    NativeVectorType c = _mm_shuffle_ps(prod, prod, _MM_SHUFFLE(2, 2, 2, 2)); \
+    NativeVectorType d = _mm_shuffle_ps(prod, prod, _MM_SHUFFLE(3, 3, 3, 3)); \
+    NativeVectorType sum1 = _mm_add_ps(prod, b);        \
+    NativeVectorType sum2 = _mm_add_ps(c, d);           \
+    NativeVectorType sum = _mm_add_ps(sum1, sum2);      \
+    MINGL_VECTOR_SPLAT_I(r, sum, 0);                    \
+} while(0)
+
+#define MINGL_VECTOR_RECIPROCAL_SQRT(r, v) do {         \
+    r = _mm_rsqrt_ps(v);                                \
+} while(0)
+
+#define MINGL_VECTOR_NORMALIZE(r, v) do {               \
+    NativeVectorType sqr;                               \
+    MINGL_VECTOR_DOT(sqr, v, v);                        \
+    NativeVectorType recipsqrt;                         \
+    MINGL_VECTOR_RECIPROCAL_SQRT(recipsqrt, sqr);       \
+    r = _mm_mul_ps(v, recipsqrt);                       \
+} while(0);
+
 #define MINGL_VECTOR_ADD(r, v0, v1) do { r = _mm_add_ps(v0, v1); } while(0)
 
 #define MINGL_VECTOR_SUBTRACT(r, v0, v1) do { r = _mm_sub_ps(v0, v1); } while(0)
+
+#define MINGL_VECTOR_NEGATE(r, v) do {                  \
+    NativeVectorType zero = _mm_setzero_ps();           \
+    r = _mm_sub_ps(zero, v);                            \
+} while(0)
+
+// in 'normal' order compared to _MM_SHUFFLE
+#define MINGL_SHUF(x,y,z,w) (((w) << 6) | ((z) << 4) | ((y) << 2) | (x))
+
+#define MINGL_VECTOR_CROSS3(r, v0, v1) do {                             \
+    const int yzx = MINGL_SHUF(1, 2, 0, 0);                             \
+    const int zxy = MINGL_SHUF(2, 0, 1, 0);                             \
+    NativeVectorType v0yzx = _mm_shuffle_ps(v0, v0, yzx);               \
+    NativeVectorType v0zxy = _mm_shuffle_ps(v0, v0, zxy);               \
+    NativeVectorType v1yzx = _mm_shuffle_ps(v1, v1, yzx);               \
+    NativeVectorType v1zxy = _mm_shuffle_ps(v1, v1, zxy);               \
+    r = _mm_sub_ps(_mm_mul_ps(v0yzx, v1zxy), _mm_mul_ps(v1yzx, v0zxy)); \
+} while(0)
 
 #define MINGL_VECTOR_MULTIPLY(r, v0, v1) do { r = _mm_mul_ps(v0, v1); } while(0)
 

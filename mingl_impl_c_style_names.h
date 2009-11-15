@@ -177,6 +177,9 @@ inline void glTranslatef (GLfloat x, GLfloat y, GLfloat z) { MinGLGlobalContext-
 inline void glTranslatex (GLfixed x, GLfixed y, GLfixed z) { MinGLGlobalContext->Translate(_x2f(x), _x2f(y), _x2f(z)); }
 inline void glVertexPointer (GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) { MinGLGlobalContext->VertexPointer(size, type, stride, pointer); }
 inline void glViewport (GLint x, GLint y, GLsizei width, GLsizei height) { MinGLGlobalContext->Viewport(x, y, width, height); }
+
+inline void gluLookAt(GLfloat eyex, GLfloat eyey, GLfloat eyez, GLfloat centerx, GLfloat centery, GLfloat centerz, GLfloat upx, GLfloat upy, GLfloat upz) { MinGLGlobalContext->LookAt(eyex, eyey, eyez, centerx, centery, centerz, upx, upy, upz); }
+inline void gluPerspective(GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zFar) { MinGLGlobalContext->Perspective(fovy, aspect, zNear, zFar); }
 }
 
 #endif

@@ -32,6 +32,7 @@ class VecFloat
         explicit VecFloat(const GLfloat f) { MINGL_VECTOR_SPLAT_1(v, f); }
 
         explicit VecFloat(const NativeVectorType v) : v(v) {}
+        void operator=(VecFloat::Arg a) { v = a.v; }
 
         template <int I>
         VecFloat(VecFloatRef<I> r)
@@ -154,6 +155,12 @@ inline Vec4 operator-(Vec4::Arg a)
     NativeVectorType ret;
     MINGL_VECTOR_NEGATE(ret, a.v);
     return Vec4(ret);
+}
+inline VecFloat operator-(VecFloat::Arg a)
+{
+    NativeVectorType ret;
+    MINGL_VECTOR_NEGATE(ret, a.v);
+    return VecFloat(ret);
 }
 
 // OP *

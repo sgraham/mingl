@@ -808,6 +808,7 @@ class MinGL
         void GetInteger(GLenum pname, GLint *params);
         const GLubyte* GetString(GLenum name);
         void Hint(GLenum target, GLenum mode);
+        GLboolean IsEnabled(GLenum cap);
         void LightModel(GLenum pname, GLfloat param);
         void LightModel(GLenum pname, const GLfloat *params);
         void Light(GLenum light, GLenum pname, GLfloat param);

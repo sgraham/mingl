@@ -61,6 +61,7 @@ inline void glGenTextures (GLsizei n, GLuint *textures) { MinGLGlobalContext->Ge
 inline GLenum glGetError () { return MinGLGlobalContext->GetError(); }
 inline void glGetIntegerv (GLenum pname, GLint *params) { MinGLGlobalContext->GetInteger(pname, params); }
 inline const GLubyte * glGetString (GLenum name) { return MinGLGlobalContext->GetString(name); }
+inline GLboolean glIsEnabled (GLenum cap) { return MinGLGlobalContext->IsEnabled(cap); }
 inline void glHint (GLenum target, GLenum mode) { MinGLGlobalContext->Hint(target, mode); }
 inline void glLightModelf (GLenum pname, GLfloat param) { MinGLGlobalContext->LightModel(pname, param); }
 inline void glLightModelfv (GLenum pname, const GLfloat *params) { MinGLGlobalContext->LightModel(pname, params); }

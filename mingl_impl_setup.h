@@ -67,6 +67,19 @@ enum CompareFuncE
     CF_Always,
 };
 
+enum CullFaceE
+{
+    CF_Front,
+    CF_Back,
+    CF_FrontAndBack,
+};
+
+enum FrontFaceE
+{
+    FF_CounterClockwise,
+    FF_Clockwise,
+};
+
 enum { MaxMatrixStackDepth = 16 };
 
 struct Texture

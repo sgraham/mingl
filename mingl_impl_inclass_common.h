@@ -32,6 +32,9 @@ struct DisplayImplContext
         NormalArray.Enabled = false;
         for (int i = 0; i < TU_NumTextureUnits; ++i)
             TexCoordArray[i].Enabled = false;
+        CullFaceEnabled = false;
+        FrontFace = FF_CounterClockwise;
+        CullFace = CF_Back;
 
         Funcs.Tri = &MinGL::renderTriangleGeneric;
     }
@@ -128,6 +131,10 @@ struct DisplayImplContext
     GLint StencilCompareValue;
     GLuint StencilCompareMask;
 
+    bool CullFaceEnabled;
+    FrontFaceE FrontFace;
+    CullFaceE CullFace;
+
     struct ViewportState
     {
         int Ox;
@@ -177,8 +184,9 @@ void SaveZBuffer(const char* id, bool convertToPngWithImagemagick=true)
         char buf[256];
         sprintf(buf, "convert -define quantum:format=floating-point -depth 32 -size %dx%d %s %s", ctx.Buf.Width, ctx.Buf.Height, fngray, fnpng);
         //printf("running '%s'\n", buf);
-        system(buf);
-        printf("wrote %s and converted to %s\n", fngray, fnpng);
+        int rc = system(buf);
+        if (rc == 0)
+            printf("wrote %s and converted to %s\n", fngray, fnpng);
     }
     else
     {
@@ -188,7 +196,7 @@ void SaveZBuffer(const char* id, bool convertToPngWithImagemagick=true)
 private:
 
 // these are nicer implemented near their api functions
-void enableOrDisable(GLenum cap, bool val);
+bool* enableOrDisablePtr(GLenum cap);
 void enableOrDisableCS(GLenum array, bool val);
 bool compareFuncAssign(GLenum func, CompareFuncE& into);
 Vec4 getVec4FromArrayPtr(const float* p, const int size);

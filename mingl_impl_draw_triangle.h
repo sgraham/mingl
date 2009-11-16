@@ -251,10 +251,34 @@ inline void drawScanLineGeneric(const Gradients& grads, const Edge* left, const 
     }
 }
 
+// calculate (2x) the signed area of the triangle (ie. cross product).
+// if it's <= 0 then this is back facing, else front facing.
+// the FrontFace api function can swap this behaviour (GL_CW means to negate area)
+// then, depending on the setting of CullFace, we return whether this face
+// should be dropped from rasterization.
+// all calculations are done in window space (i.e. what we have here).
+inline bool isCulled(const Vec4& v1, const Vec4& v2, const Vec4& v3)
+{
+    if (!ctx.CullFaceEnabled) return false;
+    if (ctx.CullFace == CF_FrontAndBack) return true;
+
+    VecFloat area = (v1.X()*v2.Y() - v2.X()*v1.Y())
+        + (v2.X()*v3.Y() - v3.X()*v2.Y())
+        + (v3.X()*v1.Y() - v1.X()*v3.Y());
+
+    if (ctx.FrontFace == FF_Clockwise) area = -area;
+
+    bool areaLEZero = area <= 0.f;
+    return ((areaLEZero && ctx.CullFace == CF_Back)
+            || (!areaLEZero && ctx.CullFace == CF_Front));
+}
+
 // does runtime switching on all renderstate (mostly at scanline level). once
 // more of it's implemented, pull out into compile-time generated variations.
 inline void renderTriangleGeneric(const ProcVert* V1, const ProcVert* V2, const ProcVert* V3)
 {
+    if (isCulled(V1->pos, V2->pos, V3->pos)) return;
+
     // v1 top, v2 middle, v3 bottom
     if (V1->pos.Y() > V3->pos.Y()) swap(V1, V3);
     if (V2->pos.Y() > V3->pos.Y()) swap(V2, V3);
@@ -268,6 +292,9 @@ inline void renderTriangleGeneric(const ProcVert* V1, const ProcVert* V2, const 
     const ProcVert& v1 = *V1;
     const ProcVert& v2 = *V2;
     const ProcVert& v3 = *V3;
+    //v1.pos.SetY(-(float)v1.pos.Y());
+    //v2.pos.SetY(-(float)v2.pos.Y());
+    //v3.pos.SetY(-(float)v3.pos.Y());
 
     Gradients grads(v1, v2, v3);
     Edge edge12(grads, v1, v2, true);

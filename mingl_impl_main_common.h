@@ -98,8 +98,19 @@ inline void MinGL::CompressedTexSubImage2D(GLenum target, GLint level, GLint xof
 inline void MinGL::CopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
 inline void MinGL::CopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height) { MINGL_ASSERT(0); }
+
 // --------------------------------------------------------------------------
-inline void MinGL::CullFace(GLenum mode) { MINGL_ASSERT(0); }
+inline void MinGL::CullFace(GLenum mode)
+{
+    switch (mode)
+    {
+        case GL_FRONT: ctx.CullFace = CF_Front; break;
+        case GL_BACK: ctx.CullFace = CF_Back; break;
+        case GL_FRONT_AND_BACK: ctx.CullFace = CF_FrontAndBack; break;
+        default: MINGL_ERR(GL_INVALID_ENUM);
+    }
+}
+
 // --------------------------------------------------------------------------
 inline void MinGL::DeleteTextures(GLsizei n, const GLuint *textures) { MINGL_ASSERT(0); }
 
@@ -122,7 +133,10 @@ inline void MinGL::DepthRange(GLclampf zNear, GLclampf zFar)
 }
 
 // --------------------------------------------------------------------------
-inline void MinGL::Disable(GLenum cap) { MINGL_ASSERT(0); }
+inline void MinGL::Disable(GLenum cap)
+{
+    *enableOrDisablePtr(cap) = false;
+}
 
 // --------------------------------------------------------------------------
 inline void MinGL::DisableClientState(GLenum array)
@@ -150,8 +164,9 @@ inline void MinGL::advanceArrayPtr(const float*& p, const DisplayImplContext::Ar
     p += as.Size;
     if (as.Stride != 0)
     {
-        const unsigned char*& pAsChar = reinterpret_cast<const unsigned char*&>(p);
-        pAsChar += as.Stride;
+        // todo; strict aliasing
+        //char*& pAsChar = reinterpret_cast<char*&>(const_cast<float*&>(p));
+        //pAsChar += as.Stride;
     }
 }
 
@@ -213,6 +228,7 @@ inline void MinGL::transformCurrentVert()
     float n = ctx.Viewport.N;
     ctx.Vert.pos = Vec4((ctx.Viewport.Px/2) * dev.X() + ctx.Viewport.Ox,
                         -((ctx.Viewport.Py/2) * dev.Y() + ctx.Viewport.Oy) + ctx.Viewport.Py, // todo; we flip here rather than in rasterize. problematic?
+                        //(ctx.Viewport.Py/2) * dev.Y() + ctx.Viewport.Oy,
                         ((f-n)/2.f) * dev.Z() + (n+f)/2.f,
                         0.f);
     //pvec("final", ctx.Vert.pos);
@@ -315,7 +331,7 @@ inline void MinGL::DrawElements(GLenum mode, GLsizei count, GLenum type, const G
 // --------------------------------------------------------------------------
 inline void MinGL::Enable(GLenum cap)
 {
-    enableOrDisable(cap, true);
+    *enableOrDisablePtr(cap) = true;
 }
 
 // --------------------------------------------------------------------------
@@ -340,8 +356,17 @@ inline void MinGL::Flush()
 inline void MinGL::Fog(GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
 inline void MinGL::Fog(GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+
 // --------------------------------------------------------------------------
-inline void MinGL::FrontFace(GLenum mode) { MINGL_ASSERT(0); }
+inline void MinGL::FrontFace(GLenum mode)
+{
+    switch (mode)
+    {
+        case GL_CW: ctx.FrontFace = FF_Clockwise; break;
+        case GL_CCW: ctx.FrontFace = FF_CounterClockwise; break;
+        default: MINGL_ERR(GL_INVALID_ENUM);
+    }
+}
 
 // --------------------------------------------------------------------------
 inline void MinGL::Frustum(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
@@ -389,6 +414,12 @@ inline const GLubyte* MinGL::GetString(GLenum name)
         case GL_EXTENSIONS: return reinterpret_cast<const GLubyte*>("");
         default: MINGL_ERR_WRET(GL_INVALID_ENUM, 0);
     }
+}
+
+// --------------------------------------------------------------------------
+inline GLboolean MinGL::IsEnabled(GLenum cap)
+{
+    return *enableOrDisablePtr(cap);
 }
 
 // --------------------------------------------------------------------------
@@ -689,18 +720,14 @@ inline bool MinGL::compareFuncAssign(GLenum func, CompareFuncE& into)
 }
 
 // --------------------------------------------------------------------------
-inline void MinGL::enableOrDisable(GLenum cap, bool val)
+inline bool* MinGL::enableOrDisablePtr(GLenum cap)
 {
     switch (cap)
     {
-        case GL_TEXTURE_2D:
-            ctx.Texture2DEnabled = val;
-            break;
-        case GL_DEPTH_TEST:
-            ctx.DepthTestEnabled = val;
-            break;
-        default:
-            MINGL_ASSERT(0);
+        case GL_TEXTURE_2D: return &ctx.Texture2DEnabled;
+        case GL_DEPTH_TEST: return &ctx.DepthTestEnabled;
+        case GL_CULL_FACE: return &ctx.CullFaceEnabled;
+        default: MINGL_ASSERT(0);
     }
 }
 // --------------------------------------------------------------------------

@@ -187,6 +187,7 @@ inline void drawScanLineGeneric(const Gradients& grads, const Edge* left, const 
 
     GLuint* dest = ctx.Buf.C + left->Y * ctx.Buf.Stride + xstart;
     float* zdest = ctx.Buf.Z + left->Y * ctx.Buf.Stride + xstart;
+    //printf("zoff: %d %d\n", left->Y, xstart);
     int width = ceil(right->X) - xstart;
 
     const GLuint* texdata;

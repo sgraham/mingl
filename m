@@ -16,7 +16,7 @@ def buildAndRun(srcs, wantDebug=True):
     """build and run simple tests. srcs shouldn't have extension. -o is to first srcs"""
     plat = platform.uname()[0]
     if plat == "Linux":
-        cmd("g++ -msse -Wall -fstrict-aliasing -Wextra -Wno-unused-parameter -Werror -g %s %s -lX11 -o %s"
+        cmd("g++ -O4 -msse -Wall -fstrict-aliasing -Wextra -Wno-unused-parameter -Werror -g %s %s -lX11 -o %s"
                 % ("" if wantDebug else "-O3 -DWANT_DIST_TEST",
                    ' '.join([x+".cpp" for x in srcs]),
                    srcs[0]))

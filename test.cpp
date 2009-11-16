@@ -50,6 +50,7 @@ class Main : public MinGL, public EventListener
             {
                 MatrixMode(GL_PROJECTION);
                 LoadIdentity();
+                Ortho(0, 1280, 720, 0, -20, 100);
                 MatrixMode(GL_MODELVIEW);
                 LoadIdentity();
                 MatrixMode(GL_TEXTURE);
@@ -62,13 +63,13 @@ class Main : public MinGL, public EventListener
                 {
                     float triangle[] =
                     {
-                        300.f, 100.f, -3.f,
-                        400.f, 200.f, -3.f,
-                        250.f, 400.f, -3.f,
+                        300.f, 100.f, 0.f,
+                        400.f, 200.f, 0.f,
+                        250.f, 400.f, 0.f,
 
-                        300.f, 100.f, -3.f,
-                        250.f, 400.f, -3.f,
-                        50.f, 300.f, -3.f,
+                        300.f, 100.f, 0.f,
+                        250.f, 400.f, 0.f,
+                        50.f, 300.f, 0.f,
                     };
 
                     float texcoords[] =
@@ -100,6 +101,7 @@ class Main : public MinGL, public EventListener
                         //99.5f, 163.5f,
                     };
 
+                    /*
                     float tcs[] =
                     {
                         -0.5f, -0.5f,
@@ -108,6 +110,17 @@ class Main : public MinGL, public EventListener
 
                         //63.5f, -0.5f,
                         63.5f, 63.5f,
+                        //-0.5f, 63.5f,
+                    };
+                    */
+                    float tcs[] =
+                    {
+                        0.f, 0.f,
+                        1.f, 0.f,
+                        0.f, 1.f,
+
+                        //63.5f, -0.5f,
+                        1.f, 1.f,
                         //-0.5f, 63.5f,
                     };
 
@@ -132,6 +145,7 @@ class Main : public MinGL, public EventListener
                     DrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(verts)/sizeof(verts[0])/2);
                 }
 
+                /*
                 if (0)
                 {
                     float test[] =
@@ -150,6 +164,7 @@ class Main : public MinGL, public EventListener
                     TexCoordPointer(2, GL_FLOAT, 0, tc);
                     DrawArrays(GL_TRIANGLES, 0, 6);
                 }
+                */
 
                 SwapBuffers();
             }

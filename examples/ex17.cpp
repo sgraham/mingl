@@ -80,12 +80,14 @@ float yrot = 0.0f;
 
 int main()
 {
-    MinGLGlobalContext = new MinGL("ex17");
+    int width = 1280;
+    int height = 720;
+    MinGLGlobalContext = new MinGL("ex17", width, height);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    gluPerspective(45.0f, 1.0f * 1280.f / 720.f, 1.0f, 100.0f);
+    gluPerspective(45.0f, (float)width / (float)height, 1.0f, 100.0f);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -118,6 +120,7 @@ int main()
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
     //glEnable(GL_CULL_FACE);
+    //glFrontFace(GL_CW);
     //glShadeModel(GL_SMOOTH);
 
     while (MinGLGlobalContext->IsOpen())
@@ -136,7 +139,6 @@ int main()
         glColor4f(1.f, 0.f, 0.f, 1.f);
         glNormal3f(0.f, 0.f, 1.f);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        /*
         glNormal3f(0.0f, 0.0f, -1.0f);
         glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
 
@@ -153,10 +155,9 @@ int main()
         glDrawArrays(GL_TRIANGLE_STRIP, 16, 4);
         glNormal3f(0.0f, -1.0f, 0.0f);
         glDrawArrays(GL_TRIANGLE_STRIP, 20, 4);
-        */
 
-        //xrot += 2.f;
-        //yrot += 3.f;
+        xrot += .2f;
+        yrot += .3f;
         MinGLGlobalContext->SwapBuffers();
     }
 }

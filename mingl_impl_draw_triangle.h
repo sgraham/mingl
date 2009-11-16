@@ -218,8 +218,8 @@ inline void drawScanLineGeneric(const Gradients& grads, const Edge* left, const 
         {
             float fu = (uoz * z + 0.5f);
             float fv = (voz * z + 0.5f);
-            int u = (int)(fu * texWidth);
-            int v = (int)(fv * texHeight);
+            int u = (int)(fu);// * texWidth - 0.5f);
+            int v = (int)(fv);// * texHeight - 0.5f);
             //printf("u, v: %d %d\n", u, v);
             fragColor = *(texdata + u + (v * texStride));
 
@@ -290,9 +290,19 @@ inline void renderTriangleGeneric(const ProcVert* V1, const ProcVert* V2, const 
             //(float)V2->pos.X(), (float)V2->pos.Y(),
             //(float)V3->pos.X(), (float)V3->pos.Y());
 
-    const ProcVert& v1 = *V1;
-    const ProcVert& v2 = *V2;
-    const ProcVert& v3 = *V3;
+    ProcVert v1 = *V1;
+    ProcVert v2 = *V2;
+    ProcVert v3 = *V3;
+
+    if (ctx.Texture2DEnabled)
+    {
+        int texWidth = ctx.CurrentTexture->Width;
+        int texHeight = ctx.CurrentTexture->Height;
+        v1.tex[0] = Vec4(v1.tex[0].X() * texWidth - 0.5f, v1.tex[0].Y() * texHeight - 0.5f, 0.f, 0.f); // todo; t, r
+        v2.tex[0] = Vec4(v2.tex[0].X() * texWidth - 0.5f, v2.tex[0].Y() * texHeight - 0.5f, 0.f, 0.f);
+        v3.tex[0] = Vec4(v3.tex[0].X() * texWidth - 0.5f, v3.tex[0].Y() * texHeight - 0.5f, 0.f, 0.f);
+        // todo; tex1
+    }
     //v1.pos.SetY(-(float)v1.pos.Y());
     //v2.pos.SetY(-(float)v2.pos.Y());
     //v3.pos.SetY(-(float)v3.pos.Y());

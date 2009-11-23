@@ -80,8 +80,8 @@ float yrot = 0.0f;
 
 int main()
 {
-    int width = 1280;
-    int height = 720;
+    int width = 640;
+    int height = 360;
     MinGLGlobalContext = new MinGL("ex17", width, height);
 
     glMatrixMode(GL_PROJECTION);
@@ -156,8 +156,8 @@ int main()
         glNormal3f(0.0f, -1.0f, 0.0f);
         glDrawArrays(GL_TRIANGLE_STRIP, 20, 4);
 
-        xrot += .2f;
-        yrot += .3f;
+        xrot += .1f;
+        yrot += .15f;
         MinGLGlobalContext->SwapBuffers();
     }
 }

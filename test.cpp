@@ -12,10 +12,12 @@ extern unsigned char testtex_rgba[];
 class Main : public MinGL, public EventListener
 {
     float mOffset;
+    float xrot;
     public:
 
-        Main() : mOffset(0.0f) // (0.5f) is a pathological case
+        Main() : MinGL("test", 500, 500), mOffset(0.5f) // (0.5f) is a pathological case
         {
+            xrot = 0.f;
         }
 
         void OnKeyDown(Key k)
@@ -28,6 +30,8 @@ class Main : public MinGL, public EventListener
             {
                 mOffset += 0.01f;
             }
+            if (k == Key::Space)
+                xrot = 0;
         }
 
         void Run()
@@ -50,9 +54,12 @@ class Main : public MinGL, public EventListener
             {
                 MatrixMode(GL_PROJECTION);
                 LoadIdentity();
-                Ortho(0, 1280, 720, 0, -20, 100);
+                Ortho(0, 500, 500, 0, -20, 100);
                 MatrixMode(GL_MODELVIEW);
                 LoadIdentity();
+                Translate(250.f, 250.f, 0.f);
+                Rotate(xrot, 0.f, 0.f, 1.f);
+                Scale(4.f, 4.f, 4.f);
                 MatrixMode(GL_TEXTURE);
                 LoadIdentity();
                 ClearColor(0.f, 0.f, 0.f, 0.f);
@@ -92,12 +99,12 @@ class Main : public MinGL, public EventListener
                 {
                     float verts[] = 
                     {
-                        99.5f, 99.5f,
-                        163.5f, 99.5f,
-                        99.5f, 163.5f,
+                        -0.5f, -0.5f,
+                        63.5f, -0.5f,
+                        -0.5f, 63.5f,
 
                         //163.5f, 99.5f,
-                        163.5f, 163.5f,
+                        63.5f, 63.5f,
                         //99.5f, 163.5f,
                     };
 
@@ -126,7 +133,7 @@ class Main : public MinGL, public EventListener
 
                     for (unsigned int i = 0; i < sizeof(verts)/sizeof(verts[0]); ++i)
                     {
-                        //verts[i] -= 0.5f;
+                        verts[i] -= 32.f;
                     }
 
                     //mOffset += delta;
@@ -166,6 +173,7 @@ class Main : public MinGL, public EventListener
                 }
                 */
 
+                xrot += 0.05f;
                 SwapBuffers();
             }
 

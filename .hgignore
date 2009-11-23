@@ -7,6 +7,7 @@ tags
 mingl.h
 zbuf_*.gray
 zbuf_*.png
+*.ogv
 
 syntax: regexp
 ^examples/ex\d\d$

@@ -39,7 +39,7 @@ class Main : public MinGL, public EventListener
             SetListener(this);
 
             printf("GL_VENDOR: %s\nGL_RENDERER: %s\nGL_VERSION: %s\n", GetString(GL_VENDOR), GetString(GL_RENDERER), GetString(GL_VERSION));
-            printf("sizeof(mingl::MinGL): %d\n", sizeof(MinGL));
+            printf("sizeof(mingl::MinGL): %ld\n", sizeof(MinGL));
 
             EnableClientState(GL_VERTEX_ARRAY);
             EnableClientState(GL_TEXTURE_COORD_ARRAY);

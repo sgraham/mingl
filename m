@@ -61,6 +61,10 @@ def ex(num):
     dist(withLines=True)
     buildAndRun(["examples/ex%02d" % int(num), "testtex"])
 
+def sanangeles():
+    dist(withLines=True)
+    buildAndRun(["examples/sanangeles/demo"])
+
 def main():
     if len(sys.argv) < 2:
         arg = "test"
@@ -74,8 +78,10 @@ def main():
         dist()
     elif arg == "ex":
         ex(sys.argv[2])
+    elif arg == "sanangeles":
+        sanangeles()
     else:
-        print "usage: m {test|tex|dist}"
+        print "usage: m {test|tex|dist|ex N|sanangeles}"
 
 if __name__ == "__main__":
     main()

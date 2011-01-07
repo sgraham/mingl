@@ -242,7 +242,7 @@ inline void drawScanLineGeneric(const Gradients& grads, const Edge* left, const 
         }
         ooz += grads.dOOZdX;
 
-        if (passesDepthFunc(z, *zdest))
+        //if (passesDepthFunc(z, *zdest))
         {
             *dest = fragColor;
             *zdest = z;
@@ -335,6 +335,14 @@ inline void renderTriangleGeneric(const ProcVert* V1, const ProcVert* V2, const 
         left2 = &edge23;
         right1 = right2 = &edge13;
     }
+
+    // todo; 3d clipping and perhaps 2d here?
+    if (edge12.X < 0 || edge12.Y < 0
+            || edge23.X < 0 || edge23.Y < 0
+            || edge12.X >= ctx.Buf.Width || edge12.Y + edge12.Height >= ctx.Buf.Height
+            || edge23.X >= ctx.Buf.Width || edge23.Y + edge23.Height >= ctx.Buf.Height)
+        return;
+
     int height = edge12.Height;
     while (height)
     {

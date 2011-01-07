@@ -35,6 +35,12 @@ struct DisplayImplContext
         CullFaceEnabled = false;
         FrontFace = FF_CounterClockwise;
         CullFace = CF_Back;
+        NormalizeEnabled = false;
+        ColorMaterialEnabled = false;
+
+        LightingEnabled = false;
+        for (int i = 0; i < MaxNumLights; ++i)
+            LightNEnabled[i] = false;
 
         Funcs.Tri = &MinGL::renderTriangleGeneric;
     }
@@ -134,6 +140,13 @@ struct DisplayImplContext
     bool CullFaceEnabled;
     FrontFaceE FrontFace;
     CullFaceE CullFace;
+
+    bool NormalizeEnabled;
+
+    bool LightingEnabled;
+    bool LightNEnabled[4];
+
+    bool ColorMaterialEnabled;
 
     struct ViewportState
     {

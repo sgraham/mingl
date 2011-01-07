@@ -428,10 +428,20 @@ inline void MinGL::Hint(GLenum target, GLenum mode) { MINGL_ASSERT(0); }
 inline void MinGL::LightModel(GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
 // --------------------------------------------------------------------------
 inline void MinGL::LightModel(GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+
 // --------------------------------------------------------------------------
-inline void MinGL::Light(GLenum light, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+inline void MinGL::Light(GLenum light, GLenum pname, GLfloat param)
+{
+    MINGL_ASSERT(0);
+}
+
 // --------------------------------------------------------------------------
-inline void MinGL::Light(GLenum light, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+inline void MinGL::Light(GLenum light, GLenum pname, const GLfloat *params)
+{
+    printf("todo; Light\n");
+    //MINGL_ASSERT(0);
+}
+
 // --------------------------------------------------------------------------
 inline void MinGL::LineWidth(GLfloat width) { MINGL_ASSERT(0); }
 
@@ -453,10 +463,20 @@ inline void MinGL::LoadMatrix(const GLfloat *m)
 
 // --------------------------------------------------------------------------
 inline void MinGL::LogicOp(GLenum opcode) { MINGL_ASSERT(0); }
+
 // --------------------------------------------------------------------------
-inline void MinGL::Material(GLenum face, GLenum pname, GLfloat param) { MINGL_ASSERT(0); }
+inline void MinGL::Material(GLenum face, GLenum pname, GLfloat param)
+{
+    printf("todo; Material\n");
+    //MINGL_ASSERT(0);
+}
+
 // --------------------------------------------------------------------------
-inline void MinGL::Material(GLenum face, GLenum pname, const GLfloat *params) { MINGL_ASSERT(0); }
+inline void MinGL::Material(GLenum face, GLenum pname, const GLfloat *params)
+{
+    printf("todo; Material\n");
+    //MINGL_ASSERT(0);
+}
 
 // --------------------------------------------------------------------------
 inline void MinGL::MatrixMode(GLenum mode)
@@ -492,7 +512,14 @@ inline void MinGL::Normal(GLfloat nx, GLfloat ny, GLfloat nz)
 }
 
 // --------------------------------------------------------------------------
-inline void MinGL::NormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer) { MINGL_ASSERT(0); }
+inline void MinGL::NormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer)
+{
+    if (stride < 0) MINGL_ERR(GL_INVALID_VALUE);
+    if (type != GL_FLOAT) MINGL_ERR(GL_INVALID_ENUM);
+    ctx.NormalArray.Data = reinterpret_cast<const float*>(pointer);
+    ctx.NormalArray.Size = 3;
+    ctx.NormalArray.Stride = stride;
+}
 
 // --------------------------------------------------------------------------
 inline void MinGL::Ortho(GLfloat l, GLfloat r, GLfloat b, GLfloat t, GLfloat n, GLfloat f)
@@ -727,6 +754,13 @@ inline bool* MinGL::enableOrDisablePtr(GLenum cap)
         case GL_TEXTURE_2D: return &ctx.Texture2DEnabled;
         case GL_DEPTH_TEST: return &ctx.DepthTestEnabled;
         case GL_CULL_FACE: return &ctx.CullFaceEnabled;
+        case GL_NORMALIZE: return &ctx.NormalizeEnabled;
+        case GL_LIGHTING: return &ctx.LightingEnabled;
+        case GL_LIGHT0: return &ctx.LightNEnabled[0];
+        case GL_LIGHT1: return &ctx.LightNEnabled[1];
+        case GL_LIGHT2: return &ctx.LightNEnabled[2];
+        case GL_LIGHT3: return &ctx.LightNEnabled[3];
+        case GL_COLOR_MATERIAL: return &ctx.ColorMaterialEnabled;
         default: MINGL_ASSERT(0);
     }
 }

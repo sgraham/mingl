@@ -169,15 +169,9 @@ namespace mingl
     typedef int GLclampx;
 }
 
-#ifdef _MSC_VER
-    #pragma region PlatformSetup
-#endif
 #include <new> // we need to override operator new/delete to ensure alignment
 #include <stdint.h>
 #include "mingl_impl_setup.h"
-#ifdef _MSC_VER
-    #pragma endregion PlatformSetup
-#endif
 
 namespace mingl
 {
@@ -854,22 +848,13 @@ class MinGL
         void Perspective(GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zFar);
 
     private:
-        #ifdef _MSC_VER
-            #pragma region ImplementionData
-        #endif
         #include "mingl_impl_inclass_common.h"
         #include "mingl_impl_inclass_unix.h"
         EventListener* mListener;
-        #ifdef _MSC_VER
-            #pragma endregion ImplementionData
-        #endif
 };
 
 }
 
-#ifdef _MSC_VER
-    #pragma region Implementation
-#endif
 #include "mingl_impl_main_common.h"
 
 #include "mingl_impl_main_unix.h"
@@ -878,9 +863,5 @@ class MinGL
 
 // todo; do we want to #undef the MINGL_... we set? or all the MINGL_ that we
 // know about? or do nothing?
-#ifdef _MSC_VER
-    #pragma endregion Implementation
-    // }}}
-#endif
 
 #endif

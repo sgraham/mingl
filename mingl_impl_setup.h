@@ -80,6 +80,8 @@ enum FrontFaceE
     FF_Clockwise,
 };
 
+enum { MaxNumLights = 4 };
+
 enum { MaxMatrixStackDepth = 16 };
 
 struct Texture
